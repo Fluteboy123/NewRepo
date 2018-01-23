@@ -1,6 +1,7 @@
 ﻿// Skeleton written by Joe Zachary for CS 3500, January 2017
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
@@ -37,6 +38,37 @@ namespace Formulas
         /// </summary>
         public Formula(String formula)
         {
+            ArrayList tokens = new ArrayList();
+            byte leftPar = 0, rightPar = 0;
+            IEnumerator counter = GetTokens(formula).GetEnumerator();
+            //Adds all tokens while checking for exceptions
+            tokens.Add(counter.Current);
+
+            if (!tokens[0].Equals(@"\(") && !tokens[0].Equals(@"[a-zA-Z][0-9a-zA-Z]*") && !tokens[0].Equals(@"(?: \d+\.\d* | \d*\.\d+ | \d+ ) (?: e[\+-]?\d+)?"))
+                throw new FormulaFormatException("First character is improperly formatted");
+
+            while (counter.MoveNext())
+            {
+                tokens.Add(counter.Current);
+
+                if (counter.Current.Equals("("))
+                    leftPar++;
+                if (counter.Current.Equals(")"))
+                    rightPar++;
+                if (rightPar > leftPar)
+                    throw new FormulaFormatException("The number of right parentheses is larger than the number of left parentheses");
+            }
+
+            if(tokens.Count == 0)
+            {
+                throw new FormulaFormatException("No tokens found");
+            }
+
+            if(leftPar!=rightPar)
+                throw new FormulaFormatException("The number of left and right parentheses is uneven");
+
+            if (!tokens[tokens.Count-1].Equals(@"\)") && !tokens[tokens.Count - 1].Equals(@"[a-zA-Z][0-9a-zA-Z]*") && !tokens[tokens.Count - 1].Equals(@"(?: \d+\.\d* | \d*\.\d+ | \d+ ) (?: e[\+-]?\d+)?"))
+                throw new FormulaFormatException("Last character is improperly formatted");
         }
         /// <summary>
         /// Evaluates this Formula, using the Lookup delegate to determine the values of variables.  (The
