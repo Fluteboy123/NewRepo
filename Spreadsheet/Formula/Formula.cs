@@ -44,7 +44,7 @@ namespace Formulas
             //Adds all tokens while checking for exceptions
             tokens.Add(counter.Current);
 
-            if (!tokens[0].Equals(@"\(") && !tokens[0].Equals(@"[a-zA-Z][0-9a-zA-Z]*") && !tokens[0].Equals(@"(?: \d+\.\d* | \d*\.\d+ | \d+ ) (?: e[\+-]?\d+)?"))
+            if (!tokens[0].Equals("(") && !tokens[0].Equals(@"[a-zA-Z][0-9a-zA-Z]*") && !tokens[0].Equals(@"(?: \d+\.\d* | \d*\.\d+ | \d+ ) (?: e[\+-]?\d+)?"))//Rule #5
                 throw new FormulaFormatException("First character is improperly formatted");
 
             while (counter.MoveNext())
@@ -55,20 +55,36 @@ namespace Formulas
                     leftPar++;
                 if (counter.Current.Equals(")"))
                     rightPar++;
-                if (rightPar > leftPar)
+                if (rightPar > leftPar)//Rule #3
                     throw new FormulaFormatException("The number of right parentheses is larger than the number of left parentheses");
             }
 
-            if(tokens.Count == 0)
+            if(tokens.Count == 0)//Rule #2
             {
                 throw new FormulaFormatException("No tokens found");
             }
 
-            if(leftPar!=rightPar)
+            if(leftPar!=rightPar)//Rule #4
                 throw new FormulaFormatException("The number of left and right parentheses is uneven");
 
-            if (!tokens[tokens.Count-1].Equals(@"\)") && !tokens[tokens.Count - 1].Equals(@"[a-zA-Z][0-9a-zA-Z]*") && !tokens[tokens.Count - 1].Equals(@"(?: \d+\.\d* | \d*\.\d+ | \d+ ) (?: e[\+-]?\d+)?"))
+            if (!tokens[tokens.Count-1].Equals(")") && !tokens[tokens.Count - 1].Equals(@"[a-zA-Z][0-9a-zA-Z]*") && !tokens[tokens.Count - 1].Equals(@"(?: \d+\.\d* | \d*\.\d+ | \d+ ) (?: e[\+-]?\d+)?"))//Rule #6
                 throw new FormulaFormatException("Last character is improperly formatted");
+
+            for(int i = 0;i<tokens.Count-1;i++)
+            {
+                if(tokens[i].Equals("("))//Rule #7
+                {
+                    String follower = (string)tokens[i + 1];
+                    if (!follower.Equals("(") && !follower.Equals(@"(?: \d+\.\d* | \d*\.\d+ | \d+ ) (?: e[\+-]?\d+)?") && !follower.Equals(@"[a-zA-Z][0-9a-zA-Z]*"))
+                        throw new FormulaFormatException("Incorrect formatting of text inside parentheses");
+                }
+                else if(tokens[i].Equals(@"(?: \d+\.\d* | \d*\.\d+ | \d+ ) (?: e[\+-]?\d+)?")||tokens[i].Equals(@"[a-zA-Z][0-9a-zA-Z]*")||tokens[i].Equals(")"))//Rule #8
+                {
+                    String follower = (string)tokens[i + 1];
+                    if (!follower.Equals(")") && !follower.Equals(@"[\+\-*/]"))
+                        throw new FormulaFormatException("Incorrect formatting of text");
+                }
+            }
         }
         /// <summary>
         /// Evaluates this Formula, using the Lookup delegate to determine the values of variables.  (The
