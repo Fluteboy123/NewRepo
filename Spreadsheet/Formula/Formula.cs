@@ -107,14 +107,17 @@ namespace Formulas
             if (startIndex >= endIndex)
                 return 0;
             double num = 0;
-            ArrayList startParen = new ArrayList();
+            ArrayList parens = new ArrayList();
             //Order of Operations
-            if((startParen = indexesOf("(",startIndex,endIndex)).Count !=0)//Parentheses
+            if((parens = parenPairs(startIndex,endIndex)).Count !=0)//Parentheses
             {
-                ArrayList endParen = indexesOf(")", startIndex, endIndex);
-                tokens[(int)(startParen[0])] = Calculate(lookup, (int)startParen[0] + 1, (int)endParen[endParen.Count-1]);
-                for (int i = (int)(startParen[0]) + 1; i <= (int)endParen[endParen.Count - 1]; i++)
-                    tokens[i] = "";
+                for(int i=0;i<parens.Count;i+=2)
+                {
+                    double result = Calculate(lookup, (int)parens[i] + 1, (int)parens[i + 1]);
+                    for (int j = (int)parens[i]; j <= (int)parens[i + 1]; j++)
+                        tokens[j] = "";
+                    tokens[(int)parens[i] + 1] = result.ToString();
+                }
             }
 
             for(int i = startIndex;i<endIndex;i++)//Subtraction
@@ -186,15 +189,25 @@ namespace Formulas
             return 0;
         }
 
-        private ArrayList indexesOf(String key, int startIndex, int endIndex)
+        private ArrayList parenPairs(int startIndex, int endIndex)
         {
             ArrayList indexList = new ArrayList();
+            int parenLevel = 0;
             for(int i = startIndex;i<endIndex;i++)
             {
-                if(tokens[i].Equals(key))
-                    indexList.Add(i);
+                if (tokens[i].Equals("("))
+                {
+                    parenLevel++;
+                    if(parenLevel == 1)
+                        indexList.Add(i);
+                }
+                if (tokens[i].Equals(")"))
+                {
+                    parenLevel--;
+                    if (parenLevel == 0)
+                        indexList.Add(i);
+                }
             }
-            indexList.Add(-1);
             return indexList;
         }
         /// <summary>
