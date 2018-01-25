@@ -43,9 +43,8 @@ namespace Formulas
             tokens = new ArrayList();
             byte leftPar = 0, rightPar = 0;
             IEnumerator counter = GetTokens(formula).GetEnumerator();
-            //Adds all tokens while checking for exceptions
-            tokens.Add(counter.Current);
 
+            //Adds all tokens while checking for exceptions
             while (counter.MoveNext())
             {
                 tokens.Add(counter.Current);
@@ -183,6 +182,7 @@ namespace Formulas
                     }
                 }
             }
+            return 0;
         }
 
         private ArrayList indexesOf(String key, int startIndex, int endIndex)
