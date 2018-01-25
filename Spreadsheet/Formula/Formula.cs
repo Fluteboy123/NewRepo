@@ -40,6 +40,7 @@ namespace Formulas
         /// </summary>
         public Formula(String formula)
         {
+            double temp;
             tokens = new ArrayList();
             byte leftPar = 0, rightPar = 0;
             IEnumerator counter = GetTokens(formula).GetEnumerator();
@@ -62,27 +63,27 @@ namespace Formulas
                 throw new FormulaFormatException("No tokens found");
             }
 
-            if (!tokens[0].Equals("(") && !tokens[0].Equals(@"[a-zA-Z][0-9a-zA-Z]*") && !tokens[0].Equals(@"(?: \d+\.\d* | \d*\.\d+ | \d+ ) (?: e[\+-]?\d+)?"))//Rule #5
+            if (!tokens[0].Equals("(") && !new Regex(@"[a-zA-Z][0-9a-zA-Z]*").IsMatch((string)tokens[0]) && !Double.TryParse((string)tokens[0], out temp))//Rule #5
                 throw new FormulaFormatException("First character is improperly formatted");
 
             if (leftPar!=rightPar)//Rule #4
                 throw new FormulaFormatException("The number of left and right parentheses is uneven");
 
-            if (!tokens[tokens.Count-1].Equals(")") && !tokens[tokens.Count - 1].Equals(@"[a-zA-Z][0-9a-zA-Z]*") && !tokens[tokens.Count - 1].Equals(@"(?: \d+\.\d* | \d*\.\d+ | \d+ ) (?: e[\+-]?\d+)?"))//Rule #6
+            if (!tokens[tokens.Count-1].Equals(")") && !new Regex(@"[a-zA-Z][0-9a-zA-Z]*").IsMatch((string)tokens[tokens.Count - 1]) && !Double.TryParse((string)tokens[tokens.Count -1], out temp))//Rule #6
                 throw new FormulaFormatException("Last character is improperly formatted");
 
             for(int i = 0;i<tokens.Count-1;i++)
             {
-                if(tokens[i].Equals("("))//Rule #7
+                if(tokens[i].Equals("(") || new Regex(@"[\+\-*/]").IsMatch((string)tokens[i]))//Rule #7
                 {
                     String follower = (string)tokens[i + 1];
-                    if (!follower.Equals("(") && !follower.Equals(@"(?: \d+\.\d* | \d*\.\d+ | \d+ ) (?: e[\+-]?\d+)?") && !follower.Equals(@"[a-zA-Z][0-9a-zA-Z]*"))
-                        throw new FormulaFormatException("Incorrect formatting of text inside parentheses");
+                    if (!follower.Equals("(") && !Double.TryParse(follower, out temp) && !new Regex(@"[a-zA-Z][0-9a-zA-Z]*").IsMatch(follower))
+                        throw new FormulaFormatException("Incorrect formatting of text after a parenthesis or operator");
                 }
-                else if(tokens[i].Equals(@"(?: \d+\.\d* | \d*\.\d+ | \d+ ) (?: e[\+-]?\d+)?")||tokens[i].Equals(@"[a-zA-Z][0-9a-zA-Z]*")||tokens[i].Equals(")"))//Rule #8
+                else if(Double.TryParse((string)tokens[i], out temp) || new Regex(@"[a-zA-Z][0-9a-zA-Z]*").IsMatch((string)tokens[i])||tokens[i].Equals(")"))//Rule #8
                 {
                     String follower = (string)tokens[i + 1];
-                    if (!follower.Equals(")") && !follower.Equals(@"[\+\-*/]"))
+                    if (!follower.Equals(")") && !new Regex(@"[\+\-*/]").IsMatch(follower))
                         throw new FormulaFormatException("Incorrect formatting of text");
                 }
             }
@@ -152,14 +153,14 @@ namespace Formulas
                 }
             }
 
-            for (int i = startIndex; i < endIndex; i++)//Exponentials
+            /*for (int i = startIndex; i < endIndex; i++)//Exponentials
             {
                 if (tokens[i].Equals("^"))
                 {
                     num = Math.Pow(Calculate(lookup, startIndex, i), Calculate(lookup, i + 1, endIndex));
                     return num;
                 }
-            }
+            }*/
 
             for (int i = startIndex; i < endIndex; i++)//Numbers/Variables
             {
