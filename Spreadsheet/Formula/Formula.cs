@@ -16,6 +16,8 @@ namespace Formulas
     /// </summary>
     public class Formula
     {
+        //Variables
+        private ArrayList tokens;
         /// <summary>
         /// Creates a Formula from a string that consists of a standard infix expression composed
         /// from non-negative floating-point numbers (using C#-like syntax for double/int literals), 
@@ -38,14 +40,11 @@ namespace Formulas
         /// </summary>
         public Formula(String formula)
         {
-            ArrayList tokens = new ArrayList();
+            tokens = new ArrayList();
             byte leftPar = 0, rightPar = 0;
             IEnumerator counter = GetTokens(formula).GetEnumerator();
             //Adds all tokens while checking for exceptions
             tokens.Add(counter.Current);
-
-            if (!tokens[0].Equals("(") && !tokens[0].Equals(@"[a-zA-Z][0-9a-zA-Z]*") && !tokens[0].Equals(@"(?: \d+\.\d* | \d*\.\d+ | \d+ ) (?: e[\+-]?\d+)?"))//Rule #5
-                throw new FormulaFormatException("First character is improperly formatted");
 
             while (counter.MoveNext())
             {
@@ -64,7 +63,10 @@ namespace Formulas
                 throw new FormulaFormatException("No tokens found");
             }
 
-            if(leftPar!=rightPar)//Rule #4
+            if (!tokens[0].Equals("(") && !tokens[0].Equals(@"[a-zA-Z][0-9a-zA-Z]*") && !tokens[0].Equals(@"(?: \d+\.\d* | \d*\.\d+ | \d+ ) (?: e[\+-]?\d+)?"))//Rule #5
+                throw new FormulaFormatException("First character is improperly formatted");
+
+            if (leftPar!=rightPar)//Rule #4
                 throw new FormulaFormatException("The number of left and right parentheses is uneven");
 
             if (!tokens[tokens.Count-1].Equals(")") && !tokens[tokens.Count - 1].Equals(@"[a-zA-Z][0-9a-zA-Z]*") && !tokens[tokens.Count - 1].Equals(@"(?: \d+\.\d* | \d*\.\d+ | \d+ ) (?: e[\+-]?\d+)?"))//Rule #6
@@ -97,9 +99,103 @@ namespace Formulas
         /// </summary>
         public double Evaluate(Lookup lookup)
         {
-            return 0;
+            return Calculate(lookup,0,tokens.Count);
         }
 
+        private double Calculate(Lookup lookup, int startIndex, int endIndex)
+        {
+            if (startIndex >= endIndex)
+                return 0;
+            double num = 0;
+            ArrayList startParen = new ArrayList();
+            //Order of Operations
+            if((startParen = indexesOf("(",startIndex,endIndex)).Count !=0)//Parentheses
+            {
+                ArrayList endParen = indexesOf(")", startIndex, endIndex);
+                tokens[(int)(startParen[0])] = Calculate(lookup, (int)startParen[0] + 1, (int)endParen[endParen.Count-1]);
+                for (int i = (int)(startParen[0]) + 1; i <= (int)endParen[endParen.Count - 1]; i++)
+                    tokens[i] = "";
+            }
+
+            for(int i = startIndex;i<endIndex;i++)//Subtraction
+            {
+                if(tokens[i].Equals("-"))
+                {
+                    num = Calculate(lookup, startIndex, i) - Calculate(lookup, i + 1, endIndex);
+                    return num;
+                }
+            }
+
+            for (int i = startIndex; i < endIndex; i++)//Addition
+            {
+                if (tokens[i].Equals("+"))
+                {
+                    num = Calculate(lookup, startIndex, i) + Calculate(lookup, i + 1, endIndex);
+                    return num;
+                }
+            }
+
+            for (int i = startIndex; i < endIndex; i++)//Division
+            {
+                if (tokens[i].Equals("/"))
+                {
+                    num = Calculate(lookup, startIndex, i) / Calculate(lookup, i + 1, endIndex);
+                    return num;
+                }
+            }
+
+            for (int i = startIndex; i < endIndex; i++)//Multiplication
+            {
+                if (tokens[i].Equals("*"))
+                {
+                    num = Calculate(lookup, startIndex, i) * Calculate(lookup, i + 1, endIndex);
+                    return num;
+                }
+            }
+
+            for (int i = startIndex; i < endIndex; i++)//Exponentials
+            {
+                if (tokens[i].Equals("^"))
+                {
+                    num = Math.Pow(Calculate(lookup, startIndex, i), Calculate(lookup, i + 1, endIndex));
+                    return num;
+                }
+            }
+
+            for (int i = startIndex; i < endIndex; i++)//Numbers/Variables
+            {
+                if (!tokens[i].Equals(""))
+                {
+                    if (Double.TryParse((string)tokens[i], out num))
+                    {
+                        return num;
+                    }
+                    else
+                    {
+                        try
+                        {
+                            return lookup((string)(tokens[i]));
+                        }
+                        catch (Exception e)
+                        {
+                            throw new FormulaEvaluationException("Inexistent variable used");
+                        }
+                    }
+                }
+            }
+        }
+
+        private ArrayList indexesOf(String key, int startIndex, int endIndex)
+        {
+            ArrayList indexList = new ArrayList();
+            for(int i = startIndex;i<endIndex;i++)
+            {
+                if(tokens[i].Equals(key))
+                    indexList.Add(i);
+            }
+            indexList.Add(-1);
+            return indexList;
+        }
         /// <summary>
         /// Given a formula, enumerates the tokens that compose it.  Tokens are left paren,
         /// right paren, one of the four operator symbols, a string consisting of a letter followed by
