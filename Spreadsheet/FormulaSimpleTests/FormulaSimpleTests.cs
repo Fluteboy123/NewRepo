@@ -47,9 +47,13 @@ namespace FormulaTestCases
         }
 
         [TestMethod]
+        ///<summary>
+        ///Construct a formula that works
+        /// </summary>
         public void Construct4()
         {
             Formula f = new Formula("53");
+            Assert.AreEqual(f.Evaluate(v => 0), 53, 1e-6);
         }
 
         /// <summary>
@@ -111,6 +115,51 @@ namespace FormulaTestCases
         {
             Formula f = new Formula("(x + y) * (z / x) * 1.0");
             Assert.AreEqual(f.Evaluate(Lookup4), 20.0, 1e-6);
+        }
+
+        ///<summary>
+        ///See if every exception message is present and correct
+        ///</summary>
+        [TestMethod]
+        public void DoEverythingWrong()
+        {
+            String[] ruleBreaker =
+            {
+                "tea",
+                "",
+                "5)(",
+                "(53",
+                "+17",
+                "35.3+",
+                "7-(/3)",
+                "(5-3)6"
+            };
+            String[] exception = { "Inexistent variable used", "No tokens found", "The number of right parentheses is larger than the number of left parentheses",
+                "The number of left and right parentheses is uneven", "First character is improperly formatted", "Last character is improperly formatted",
+                "Incorrect formatting of text after a parenthesis or operator", "Incorrect formatting of text" };
+            for(int i=0;i<ruleBreaker.Length;i++)
+            {
+                try
+                {
+                    Formula f = new Formula(ruleBreaker[i]);
+                    f.Evaluate(Lookup4);
+                    Assert.Fail();
+                }
+                catch(Exception e)
+                {
+                    Assert.AreEqual(e.Message, exception[i]);
+                }
+            }
+        }
+
+        [TestMethod]
+        ///<summary>
+        ///Tries a large equation with lots of parentheses. The value calculated should be an approximation of e
+        /// </summary>
+        public void tryALargeEquation()
+        {
+            Formula f = new Formula("1+((x)+(x*x)/2+(x*(x*x))/(2*3))+(x*((x*x)*x))/(2*3*4)");
+            Assert.AreEqual(f.Evaluate(v => 1),Math.E,0.1);
         }
 
         /// <summary>

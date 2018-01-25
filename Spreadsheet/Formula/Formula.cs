@@ -179,7 +179,7 @@ namespace Formulas
                         {
                             return lookup((string)(tokens[i]));
                         }
-                        catch (Exception e)
+                        catch (Exception e)//Rule 1
                         {
                             throw new FormulaEvaluationException("Inexistent variable used");
                         }
