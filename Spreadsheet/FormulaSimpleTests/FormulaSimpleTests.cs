@@ -162,6 +162,14 @@ namespace FormulaTestCases
             Assert.AreEqual(f.Evaluate(v => 1),Math.E,0.1);
         }
 
+        [TestMethod]
+        [ExpectedException(typeof(FormulaEvaluationException))]
+        public void DivideByZero()
+        {
+            Formula f = new Formula("5/0");
+            f.Evaluate(v => 0);
+        }
+
         /// <summary>
         /// A Lookup method that maps x to 4.0, y to 6.0, and z to 8.0.
         /// All other variables result in an UndefinedVariableException.

@@ -142,7 +142,10 @@ namespace Formulas
             {
                 if (tokens[i].Equals("/"))
                 {
-                    num = Calculate(lookup, startIndex, i) / Calculate(lookup, i + 1, endIndex);
+                    double denom = Calculate(lookup, i + 1, endIndex);
+                    if (denom == 0)
+                        throw new FormulaEvaluationException("Attempted Division By Zero");
+                    num = Calculate(lookup, startIndex, i) / denom;
                     return num;
                 }
             }
