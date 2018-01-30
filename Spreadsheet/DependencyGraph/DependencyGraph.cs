@@ -1,6 +1,7 @@
 ﻿// Skeleton implementation written by Joe Zachary for CS 3500, January 2018.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 
 namespace Dependencies
@@ -129,6 +130,39 @@ namespace Dependencies
         /// </summary>
         public void ReplaceDependees(string t, IEnumerable<string> newDependees)
         {
+        }
+        private class Node
+        {
+            private string name;
+            private Node left, right;
+            private ArrayList dependents, dependees;
+            public String GetName()
+            {
+                return name;
+            }
+            public Node(String s)
+            {
+                name = s;
+            }
+            public void AddString(String key)
+            {
+                if (name.Equals(key))
+                    return;
+                if(name.CompareTo(key)>0)
+                {
+                    if (left == null)
+                        left = new Node(key);
+                    else
+                        left.AddString(key);
+                }
+                else
+                {
+                    if (right == null)
+                        right = new Node(key);
+                    else
+                        right.AddString(key);
+                }
+            }
         }
     }
 }
