@@ -49,6 +49,8 @@ namespace Dependencies
     /// </summary>
     public class DependencyGraph
     {
+        //Head of the BST
+        Node head = null;
         /// <summary>
         /// Creates a DependencyGraph containing no dependencies.
         /// </summary>
@@ -136,32 +138,44 @@ namespace Dependencies
             private string name;
             private Node left, right;
             private ArrayList dependents, dependees;
-            public String GetName()
-            {
-                return name;
-            }
             public Node(String s)
             {
                 name = s;
+            }
+            public String GetName()
+            {
+                return name;
             }
             public void AddString(String key)
             {
                 if (name.Equals(key))
                     return;
                 if(name.CompareTo(key)>0)
-                {
-                    if (left == null)
-                        left = new Node(key);
-                    else
-                        left.AddString(key);
-                }
+                    left?.AddString(key);
                 else
+                    right?.AddString(key);
+            }
+            public Node FindNode(String key)
+            {
+                if (name.Equals(key))
+                    return this;
+                if (name.CompareTo(key) > 0)
+                    return left?.FindNode(key);
+                else
+                    return right?.FindNode(key);
+            }
+            public void AddDependent(Node d)
+            {
+                if (!dependents.Contains(d))
                 {
-                    if (right == null)
-                        right = new Node(key);
-                    else
-                        right.AddString(key);
+                    dependents.Add(d);
+                    d.AddDependee(this);
                 }
+            }
+            public void AddDependee(Node d)
+            {
+                if (!dependees.Contains(d))
+                    dependees.Add(d);
             }
         }
     }
