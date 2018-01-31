@@ -50,7 +50,7 @@ namespace Dependencies
     public class DependencyGraph
     {
         //Head of the BST
-        Node head = null;
+        private Node head = null;
         /// <summary>
         /// Creates a DependencyGraph containing no dependencies.
         /// </summary>
@@ -63,7 +63,7 @@ namespace Dependencies
         /// </summary>
         public int Size
         {
-            get { return 0; }
+            get { return head == null ? 0 : head.GetSize(); }
         }
 
         /// <summary>
@@ -71,7 +71,10 @@ namespace Dependencies
         /// </summary>
         public bool HasDependents(string s)
         {
-            return false;
+            if (s == null)
+                throw new ArgumentNullException();
+            Node n = head == null ? (head = new Node(s)) : head.AddOrFindString(s);
+            return n.Dependents.Count!=0;
         }
 
         /// <summary>
@@ -79,7 +82,10 @@ namespace Dependencies
         /// </summary>
         public bool HasDependees(string s)
         {
-            return false;
+            if (s == null)
+                throw new ArgumentNullException();
+            Node n = head == null ? (head = new Node(s)) : head.AddOrFindString(s);
+            return n.Dependees.Count != 0;
         }
 
         /// <summary>
@@ -87,7 +93,14 @@ namespace Dependencies
         /// </summary>
         public IEnumerable<string> GetDependents(string s)
         {
-            return null;
+            if (s == null)
+                throw new ArgumentNullException();
+            Node n = head == null ? (head = new Node(s)) : head.AddOrFindString(s);
+            ArrayList deps = n.Dependents;
+            foreach(Node x in deps)
+            {
+                yield return x.Name;
+            }
         }
 
         /// <summary>
@@ -95,7 +108,14 @@ namespace Dependencies
         /// </summary>
         public IEnumerable<string> GetDependees(string s)
         {
-            return null;
+            if (s == null)
+                throw new ArgumentNullException();
+            Node n = head == null ? (head = new Node(s)) : head.AddOrFindString(s);
+            ArrayList deps = n.Dependees;
+            foreach (Node x in deps)
+            {
+                yield return x.Name;
+            }
         }
 
         /// <summary>
@@ -105,6 +125,11 @@ namespace Dependencies
         /// </summary>
         public void AddDependency(string s, string t)
         {
+            if (s == null || t == null)
+                throw new ArgumentNullException();
+            Node nodeS = head == null ? (head = new Node(s)) : head.AddOrFindString(s);
+            Node nodeT = head.AddOrFindString(t);
+            nodeS.AddDependent(nodeT);
         }
 
         /// <summary>
@@ -114,6 +139,11 @@ namespace Dependencies
         /// </summary>
         public void RemoveDependency(string s, string t)
         {
+            if (s == null||t == null)
+                throw new ArgumentNullException();
+            Node nodeS = head == null ? (head = new Node(s)) : head.AddOrFindString(s);
+            Node nodeT = head.AddOrFindString(t);
+            nodeS.RemoveDependent(nodeT);
         }
 
         /// <summary>
@@ -123,6 +153,7 @@ namespace Dependencies
         /// </summary>
         public void ReplaceDependents(string s, IEnumerable<string> newDependents)
         {
+            
         }
 
         /// <summary>
@@ -142,27 +173,15 @@ namespace Dependencies
             {
                 name = s;
             }
-            public String GetName()
-            {
-                return name;
-            }
-            public void AddString(String key)
-            {
-                if (name.Equals(key))
-                    return;
-                if(name.CompareTo(key)>0)
-                    left?.AddString(key);
-                else
-                    right?.AddString(key);
-            }
-            public Node FindNode(String key)
+            public String Name => name;
+            public Node AddOrFindString(String key)
             {
                 if (name.Equals(key))
                     return this;
                 if (name.CompareTo(key) > 0)
-                    return left?.FindNode(key);
+                    return left == null ? (left = new Node(key)) : left.AddOrFindString(key);
                 else
-                    return right?.FindNode(key);
+                    return right == null ? (right = new Node(key)) : right.AddOrFindString(key);
             }
             public void AddDependent(Node d)
             {
@@ -172,10 +191,34 @@ namespace Dependencies
                     d.AddDependee(this);
                 }
             }
+            public ArrayList Dependents => dependents;
+            public void RemoveDependent(Node d)
+            {
+                int index = dependents.IndexOf(d);
+                if (index >= 0)
+                    dependents.Remove(index);
+                d.RemoveDependee(this);
+            }
             public void AddDependee(Node d)
             {
                 if (!dependees.Contains(d))
                     dependees.Add(d);
+            }
+            public ArrayList Dependees => dependees;
+            public void RemoveDependee(Node d)
+            {
+                int index = dependents.IndexOf(d);
+                if (index >= 0)
+                    dependents.Remove(index);
+                else
+                    throw new ArgumentException(message: "Dependee of " + name+" not found");
+            }
+            public int GetSize()
+            {
+                int size = 1;
+                size += left == null? 0: left.GetSize();
+                size += right == null ? 0 : right.GetSize();
+                return size;
             }
         }
     }
