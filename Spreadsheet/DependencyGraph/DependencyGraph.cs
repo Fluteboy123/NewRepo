@@ -153,7 +153,16 @@ namespace Dependencies
         /// </summary>
         public void ReplaceDependents(string s, IEnumerable<string> newDependents)
         {
-            
+            IEnumerator enumerator = newDependents.GetEnumerator();
+            Node n = head == null ? (head = new Node(s)) : head.AddOrFindString(s);
+            foreach(Node x in n.Dependents)
+            {
+                n.RemoveDependent(x);
+            }
+            while(enumerator.MoveNext())
+            {
+                n.AddDependent(head.AddOrFindString((string)enumerator.Current));
+            }
         }
 
         /// <summary>
@@ -163,12 +172,23 @@ namespace Dependencies
         /// </summary>
         public void ReplaceDependees(string t, IEnumerable<string> newDependees)
         {
+            IEnumerator enumerator = newDependees.GetEnumerator();
+            Node n = head == null ? (head = new Node(t)) : head.AddOrFindString(t);
+            foreach (Node x in n.Dependees)
+            {
+                x.RemoveDependent(n);
+            }
+            while (enumerator.MoveNext())
+            {
+                Node temp = head.AddOrFindString((string)enumerator.Current);
+                temp.AddDependent(n);
+            }
         }
         private class Node
         {
             private string name;
             private Node left, right;
-            private ArrayList dependents, dependees;
+            private ArrayList dependents = new ArrayList(), dependees = new ArrayList();
             public Node(String s)
             {
                 name = s;
@@ -219,6 +239,17 @@ namespace Dependencies
                 size += left == null? 0: left.GetSize();
                 size += right == null ? 0 : right.GetSize();
                 return size;
+            }
+            public void GarbageCollect()
+            {
+                if (left != null)
+                    left.GarbageCollect();
+                if (right != null)
+                    right.GarbageCollect();
+                if(dependents.Count == 0 && dependents.Count == 0)
+                {
+                    //Remove this node
+                }
             }
         }
     }
