@@ -21,5 +21,15 @@ namespace GraphTests
             dg.AddDependency("Cause", "Result");
             Assert.AreEqual(dg.Size, 3);
         }
+        [TestMethod]
+        public void TestforListAccuracy()
+        {
+            DependencyGraph dg = new DependencyGraph();
+            dg.AddDependency("Cause", "Effect");
+            Assert.AreEqual(dg.HasDependents("Cause"), true);
+            Assert.AreEqual(dg.HasDependees("Cause"), false);
+            Assert.AreEqual(dg.HasDependents("Effect"), false);
+            Assert.AreEqual(dg.HasDependees("Effect"), true);
+        }
     }
 }

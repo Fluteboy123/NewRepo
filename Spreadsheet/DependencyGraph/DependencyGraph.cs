@@ -153,14 +153,23 @@ namespace Dependencies
         /// </summary>
         public void ReplaceDependents(string s, IEnumerable<string> newDependents)
         {
+            if (s == null)
+                throw new ArgumentNullException();
             IEnumerator enumerator = newDependents.GetEnumerator();
             Node n = head == null ? (head = new Node(s)) : head.AddOrFindString(s);
-            foreach(Node x in n.Dependents)
+            //If a string in newDependents is null, this array will be here to put the dependencies back
+            ArrayList backup = new ArrayList();
+            //Remove the existing dependents
+            foreach (Node x in n.Dependents)
             {
                 n.RemoveDependent(x);
+                backup.Add(x);
             }
+            //Add the new ones
             while(enumerator.MoveNext())
             {
+                if ((string)(enumerator.Current) == null)
+                    throw new ArgumentNullException();
                 n.AddDependent(head.AddOrFindString((string)enumerator.Current));
             }
         }
@@ -172,28 +181,57 @@ namespace Dependencies
         /// </summary>
         public void ReplaceDependees(string t, IEnumerable<string> newDependees)
         {
+            if (t == null)
+                throw new ArgumentNullException();
             IEnumerator enumerator = newDependees.GetEnumerator();
             Node n = head == null ? (head = new Node(t)) : head.AddOrFindString(t);
+            //If a string in newDependees is null, this array will be here to put the dependencies back
+            ArrayList backup = new ArrayList();
+            //Remove the existing dependees
             foreach (Node x in n.Dependees)
             {
                 x.RemoveDependent(n);
+                backup.Add(x);
             }
+            //Add the new ones
             while (enumerator.MoveNext())
             {
+                if ((string)(enumerator.Current) == null)
+                {
+                    //Put the original dependees back
+                    throw new ArgumentNullException();
+                }
                 Node temp = head.AddOrFindString((string)enumerator.Current);
                 temp.AddDependent(n);
             }
         }
+        /// <summary>
+        /// A Node in the DependencyGraph class contains a string, its dependents and its dependees. Nodes are stored in a BST organized alphabetically.
+        /// No duplicates are allowed
+        /// </summary>
         private class Node
         {
+            //Variables
             private string name;
             private Node left, right;
             private ArrayList dependents = new ArrayList(), dependees = new ArrayList();
+            /// <summary>
+            /// Creates a new node with the specified string. Used mostly in the class itself. Unless head is null, use head.AddOrFindString() to add a Node
+            /// </summary>
+            /// <param name="s">The new string in the Dependency Graph</param>
             public Node(String s)
             {
                 name = s;
             }
+            /// <summary>
+            /// Returns the Node's name
+            /// </summary>
             public String Name => name;
+            /// <summary>
+            /// Moves through the BST to find the node with key as its title. If no node is found with the title, a new one is made.
+            /// </summary>
+            /// <param name="key">The name of the node to be made or found</param>
+            /// <returns>The node with the specified string as its title</returns>
             public Node AddOrFindString(String key)
             {
                 if (name.Equals(key))
@@ -203,6 +241,11 @@ namespace Dependencies
                 else
                     return right == null ? (right = new Node(key)) : right.AddOrFindString(key);
             }
+            /// <summary>
+            /// Takes the node d and makes it a dependent of the current Node, if it isn't already a dependent. 
+            /// The current node is also automatically added to the dependee list of d.
+            /// </summary>
+            /// <param name="d">The dependent to be added</param>
             public void AddDependent(Node d)
             {
                 if (!dependents.Contains(d))
@@ -211,7 +254,15 @@ namespace Dependencies
                     d.AddDependee(this);
                 }
             }
+            /// <summary>
+            /// Returns a list of dependents
+            /// </summary>
             public ArrayList Dependents => dependents;
+            /// <summary>
+            /// Takes the node d and removes it from the current Node's dependent list, if it is a dependent. 
+            /// The current node is also automatically removed from the dependee list of d.
+            /// </summary>
+            /// <param name="d">The dependent to be removed</param>
             public void RemoveDependent(Node d)
             {
                 int index = dependents.IndexOf(d);
@@ -219,12 +270,23 @@ namespace Dependencies
                     dependents.Remove(index);
                 d.RemoveDependee(this);
             }
+            /// <summary>
+            /// Takes the node d and makes it a dependee of the current Node, if it isn't already a dependee. 
+            /// </summary>
+            /// <param name="d">The dependee to be added</param>
             public void AddDependee(Node d)
             {
                 if (!dependees.Contains(d))
                     dependees.Add(d);
             }
+            /// <summary>
+            /// Returns a list of dependees
+            /// </summary>
             public ArrayList Dependees => dependees;
+            /// <summary>
+            /// Takes the node d and removes it from the current Node's dependee list, if it is a dependee. 
+            /// </summary>
+            /// <param name="d">The dependee to be removed</param>
             public void RemoveDependee(Node d)
             {
                 int index = dependents.IndexOf(d);
@@ -233,6 +295,9 @@ namespace Dependencies
                 else
                     throw new ArgumentException(message: "Dependee of " + name+" not found");
             }
+            /// <summary>
+            /// Returns the size of the tree starting from this node
+            /// </summary>
             public int GetSize()
             {
                 int size = 1;
@@ -240,6 +305,9 @@ namespace Dependencies
                 size += right == null ? 0 : right.GetSize();
                 return size;
             }
+            /// <summary>
+            /// Looks through the tree and removes any Nodes without any dependents or dependees
+            /// </summary>
             public void GarbageCollect()
             {
                 if (left != null)
@@ -248,7 +316,10 @@ namespace Dependencies
                     right.GarbageCollect();
                 if(dependents.Count == 0 && dependents.Count == 0)
                 {
-                    //Remove this node
+                    if(left == null && right == null)//No children
+                    {
+
+                    }
                 }
             }
         }
