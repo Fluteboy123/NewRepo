@@ -21,7 +21,7 @@ namespace GraphTests
         {
             DependencyGraph dg = new DependencyGraph();
             dg.AddDependency("Cause", "Effect");
-            dg.AddDependency("Cause", "Result");
+            dg.AddDependency("Effect", "Action");
             Assert.AreEqual(dg.Size, 3);
         }
         [TestMethod]
@@ -104,6 +104,33 @@ namespace GraphTests
         public void TestNullCheck()
         {
             DependencyGraph dg = new DependencyGraph();
+        }
+        [TestMethod]
+        public void TestLargeNumbers()
+        {
+            DependencyGraph dg = new DependencyGraph();
+            String[] letters = { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J" };
+            String startPoint = letters[(new Random()).Next(8)];
+            for (int i = 0; i < 10_000; i++)
+            {
+                String randomString = letters[(new Random()).Next(8)] + letters[(new Random()).Next(8)] + letters[(new Random()).Next(8)] + letters[(new Random()).Next(8)];
+                dg.AddDependency(startPoint, randomString);
+            }
+        }
+        [TestMethod]
+        public void TestReplacements()
+        {
+            DependencyGraph dg = new DependencyGraph();
+            String[] replacements = { "H", "I", "J" };
+            dg.AddDependency("D", "A");
+            dg.AddDependency("D", "B");
+            dg.AddDependency("D", "C");
+            dg.AddDependency("E", "D");
+            dg.AddDependency("F", "D");
+            dg.AddDependency("G", "D");
+            dg.ReplaceDependents("D", replacements);
+            dg.ReplaceDependees("D", replacements);
+            Assert.AreEqual(dg.Size, 10);
         }
     }
 }

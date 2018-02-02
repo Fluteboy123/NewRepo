@@ -74,7 +74,13 @@ namespace Dependencies
             if (s == null)
                 throw new ArgumentNullException();
             Node n = head == null ? (head = new Node(s)) : head.AddOrFindString(s);
-            return n.Dependents.Count != 0;
+            ArrayList d = new ArrayList();
+            IEnumerator deps = n.Dependents().GetEnumerator();
+            while(deps.MoveNext())
+            {
+                d.Add(deps.Current);
+            }
+            return d.Count != 0;
         }
 
         /// <summary>
@@ -85,7 +91,13 @@ namespace Dependencies
             if (s == null)
                 throw new ArgumentNullException();
             Node n = head == null ? (head = new Node(s)) : head.AddOrFindString(s);
-            return n.Dependees.Count != 0;
+            ArrayList d = new ArrayList();
+            IEnumerator deps = n.Dependees().GetEnumerator();
+            while (deps.MoveNext())
+            {
+                d.Add(deps.Current);
+            }
+            return d.Count != 0;
         }
 
         /// <summary>
@@ -96,10 +108,11 @@ namespace Dependencies
             if (s == null)
                 throw new ArgumentNullException();
             Node n = head == null ? (head = new Node(s)) : head.AddOrFindString(s);
-            ArrayList deps = n.Dependents;
-            foreach (Node x in deps)
+            IEnumerator deps = n.Dependents().GetEnumerator();
+            while (deps.MoveNext())
             {
-                yield return x.Name;
+                Node current = (Node)deps.Current;
+                yield return current.Name;
             }
         }
 
@@ -111,10 +124,11 @@ namespace Dependencies
             if (s == null)
                 throw new ArgumentNullException();
             Node n = head == null ? (head = new Node(s)) : head.AddOrFindString(s);
-            ArrayList deps = n.Dependees;
-            foreach (Node x in deps)
+            IEnumerator deps = n.Dependees().GetEnumerator();
+            while (deps.MoveNext())
             {
-                yield return x.Name;
+                Node current = (Node)deps.Current;
+                yield return current.Name;
             }
         }
 
@@ -160,10 +174,15 @@ namespace Dependencies
             //If a string in newDependents is null, this array will be here to put the dependencies back
             ArrayList backup = new ArrayList();
             //Remove the existing dependents
-            foreach (Node x in n.Dependents)
+            IEnumerator deps = n.Dependents().GetEnumerator();
+            while (deps.MoveNext())
+            {
+                Node x = (Node)deps.Current;
+                backup.Add(x);
+            }
+            foreach(Node x in backup)
             {
                 n.RemoveDependent(x);
-                backup.Add(x);
             }
             //Add the new ones
             while (enumerator.MoveNext())
@@ -200,10 +219,15 @@ namespace Dependencies
             //If a string in newDependees is null, this array will be here to put the dependencies back
             ArrayList backup = new ArrayList();
             //Remove the existing dependees
-            foreach (Node x in n.Dependees)
+            IEnumerator deps = n.Dependees().GetEnumerator();
+            while (deps.MoveNext())
+            {
+                Node x = (Node)deps.Current;
+                backup.Add(x);
+            }
+            foreach(Node x in backup)
             {
                 x.RemoveDependent(n);
-                backup.Add(x);
             }
             //Add the new ones
             while (enumerator.MoveNext())
@@ -236,7 +260,6 @@ namespace Dependencies
             private string name;
             private Node Left { get; set; }
             private Node Right {get;set;}
-            private Node Parent{get;set;}
             private ArrayList dependents = new ArrayList(), dependees = new ArrayList();
             /// <summary>
             /// Creates a new node with the specified string. Used mostly in the class itself. Unless head is null, use head.AddOrFindString() to add a Node
@@ -250,11 +273,6 @@ namespace Dependencies
             /// Returns the Node's name
             /// </summary>
             public String Name => name;
-            /// <summary>
-            /// Sets the node's parent
-            /// </summary>
-            /// <param name="p">The parent Node</param>
-            public void SetParent(Node p) => this.Parent = p;
             /// <summary>
             /// Moves through the BST to find the node with key as its title. If no node is found with the title, a new one is made.
             /// </summary>
@@ -285,7 +303,13 @@ namespace Dependencies
             /// <summary>
             /// Returns a list of dependents
             /// </summary>
-            public ArrayList Dependents => dependents;
+            public IEnumerable<Node> Dependents()
+            {
+                foreach(Node x in dependents)
+                {
+                    yield return x;
+                }
+            }
             /// <summary>
             /// Takes the node d and removes it from the current Node's dependent list, if it is a dependent. 
             /// The current node is also automatically removed from the dependee list of d.
@@ -310,7 +334,13 @@ namespace Dependencies
             /// <summary>
             /// Returns a list of dependees
             /// </summary>
-            public ArrayList Dependees => dependees;
+            public IEnumerable<Node> Dependees()
+            {
+                foreach (Node x in dependees)
+                {
+                    yield return x;
+                }
+            }
             /// <summary>
             /// Takes the node d and removes it from the current Node's dependee list, if it is a dependee. 
             /// </summary>
@@ -332,31 +362,6 @@ namespace Dependencies
                 size += Left == null? 0: Left.GetSize();
                 size += Right == null ? 0 : Right.GetSize();
                 return size;
-            }
-            /// <summary>
-            /// Returns the height of the tree from this node
-            /// </summary>
-            public int Height()
-            {
-                int leftHeight = Left == null ? -1 : Left.Height();
-                int rightHeight = Right == null ? -1 : Right.Height();
-                return leftHeight > rightHeight ? leftHeight + 1 : rightHeight + 1;
-            }
-            /// <summary>
-            /// Looks through the tree and removes any Nodes without any dependents or dependees
-            /// </summary>
-            private void EditParentReference(Node n)
-            {
-                if (Parent == null)
-                    return;
-                if (Name.CompareTo(Parent.Name) < 0)
-                {
-                    Parent.Left = n;
-                }
-                else
-                {
-                    Parent.Right = n;
-                }
             }
         }
     }
