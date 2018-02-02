@@ -74,7 +74,7 @@ namespace Dependencies
             if (s == null)
                 throw new ArgumentNullException();
             Node n = head == null ? (head = new Node(s)) : head.AddOrFindString(s);
-            return n.Dependents.Count!=0;
+            return n.Dependents.Count != 0;
         }
 
         /// <summary>
@@ -97,7 +97,7 @@ namespace Dependencies
                 throw new ArgumentNullException();
             Node n = head == null ? (head = new Node(s)) : head.AddOrFindString(s);
             ArrayList deps = n.Dependents;
-            foreach(Node x in deps)
+            foreach (Node x in deps)
             {
                 yield return x.Name;
             }
@@ -139,7 +139,7 @@ namespace Dependencies
         /// </summary>
         public void RemoveDependency(string s, string t)
         {
-            if (s == null||t == null)
+            if (s == null || t == null)
                 throw new ArgumentNullException();
             Node nodeS = head == null ? (head = new Node(s)) : head.AddOrFindString(s);
             Node nodeT = head.AddOrFindString(t);
@@ -166,10 +166,22 @@ namespace Dependencies
                 backup.Add(x);
             }
             //Add the new ones
-            while(enumerator.MoveNext())
+            while (enumerator.MoveNext())
             {
                 if ((string)(enumerator.Current) == null)
+                {
+                    foreach (String x in newDependents)
+                    {
+                        try
+                        {
+                            n.RemoveDependent(head.AddOrFindString(x));
+                        }
+                        catch (Exception) { }
+                    }
+                    foreach (Node x in backup)
+                        n.AddDependent(x);
                     throw new ArgumentNullException();
+                }
                 n.AddDependent(head.AddOrFindString((string)enumerator.Current));
             }
         }
@@ -198,7 +210,16 @@ namespace Dependencies
             {
                 if ((string)(enumerator.Current) == null)
                 {
-                    //Put the original dependees back
+                    foreach(String x in newDependees)
+                    {
+                        try
+                        {
+                            head.AddOrFindString(x).RemoveDependent(n);
+                        }
+                        catch (Exception) { }
+                    }
+                    foreach(Node x in backup)
+                        x.AddDependent(n);
                     throw new ArgumentNullException();
                 }
                 Node temp = head.AddOrFindString((string)enumerator.Current);
@@ -213,7 +234,9 @@ namespace Dependencies
         {
             //Variables
             private string name;
-            private Node left, right;
+            private Node Left { get; set; }
+            private Node Right {get;set;}
+            private Node Parent{get;set;}
             private ArrayList dependents = new ArrayList(), dependees = new ArrayList();
             /// <summary>
             /// Creates a new node with the specified string. Used mostly in the class itself. Unless head is null, use head.AddOrFindString() to add a Node
@@ -228,6 +251,11 @@ namespace Dependencies
             /// </summary>
             public String Name => name;
             /// <summary>
+            /// Sets the node's parent
+            /// </summary>
+            /// <param name="p">The parent Node</param>
+            public void SetParent(Node p) => this.Parent = p;
+            /// <summary>
             /// Moves through the BST to find the node with key as its title. If no node is found with the title, a new one is made.
             /// </summary>
             /// <param name="key">The name of the node to be made or found</param>
@@ -237,9 +265,9 @@ namespace Dependencies
                 if (name.Equals(key))
                     return this;
                 if (name.CompareTo(key) > 0)
-                    return left == null ? (left = new Node(key)) : left.AddOrFindString(key);
+                    return Left == null ? (Left = new Node(key)) : Left.AddOrFindString(key);
                 else
-                    return right == null ? (right = new Node(key)) : right.AddOrFindString(key);
+                    return Right == null ? (Right = new Node(key)) : Right.AddOrFindString(key);
             }
             /// <summary>
             /// Takes the node d and makes it a dependent of the current Node, if it isn't already a dependent. 
@@ -267,7 +295,7 @@ namespace Dependencies
             {
                 int index = dependents.IndexOf(d);
                 if (index >= 0)
-                    dependents.Remove(index);
+                    dependents.RemoveAt(index);
                 d.RemoveDependee(this);
             }
             /// <summary>
@@ -289,9 +317,9 @@ namespace Dependencies
             /// <param name="d">The dependee to be removed</param>
             public void RemoveDependee(Node d)
             {
-                int index = dependents.IndexOf(d);
+                int index = dependees.IndexOf(d);
                 if (index >= 0)
-                    dependents.Remove(index);
+                    dependees.RemoveAt(index);
                 else
                     throw new ArgumentException(message: "Dependee of " + name+" not found");
             }
@@ -301,25 +329,33 @@ namespace Dependencies
             public int GetSize()
             {
                 int size = 1;
-                size += left == null? 0: left.GetSize();
-                size += right == null ? 0 : right.GetSize();
+                size += Left == null? 0: Left.GetSize();
+                size += Right == null ? 0 : Right.GetSize();
                 return size;
+            }
+            /// <summary>
+            /// Returns the height of the tree from this node
+            /// </summary>
+            public int Height()
+            {
+                int leftHeight = Left == null ? -1 : Left.Height();
+                int rightHeight = Right == null ? -1 : Right.Height();
+                return leftHeight > rightHeight ? leftHeight + 1 : rightHeight + 1;
             }
             /// <summary>
             /// Looks through the tree and removes any Nodes without any dependents or dependees
             /// </summary>
-            public void GarbageCollect()
+            private void EditParentReference(Node n)
             {
-                if (left != null)
-                    left.GarbageCollect();
-                if (right != null)
-                    right.GarbageCollect();
-                if(dependents.Count == 0 && dependents.Count == 0)
+                if (Parent == null)
+                    return;
+                if (Name.CompareTo(Parent.Name) < 0)
                 {
-                    if(left == null && right == null)//No children
-                    {
-
-                    }
+                    Parent.Left = n;
+                }
+                else
+                {
+                    Parent.Right = n;
                 }
             }
         }
