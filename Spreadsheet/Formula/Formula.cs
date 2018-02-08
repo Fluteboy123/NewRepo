@@ -74,7 +74,7 @@ namespace Formulas
 
             for(int i = 0;i<tokens.Count-1;i++)
             {
-                if(tokens[i].Equals("(") || new Regex(@"[\+\-*/]").IsMatch((string)tokens[i]))//Rule #7
+                if(tokens[i].Equals("(") || new Regex(@"^[\+\-*/]$").IsMatch((string)tokens[i]))//Rule #7
                 {
                     String follower = (string)tokens[i + 1];
                     if (!follower.Equals("(") && !Double.TryParse(follower, out temp) && !new Regex(@"[a-zA-Z][0-9a-zA-Z]*").IsMatch(follower))
@@ -83,7 +83,7 @@ namespace Formulas
                 else if(Double.TryParse((string)tokens[i], out temp) || new Regex(@"[a-zA-Z][0-9a-zA-Z]*").IsMatch((string)tokens[i])||tokens[i].Equals(")"))//Rule #8
                 {
                     String follower = (string)tokens[i + 1];
-                    if (!follower.Equals(")") && !new Regex(@"[\+\-*/]").IsMatch(follower))
+                    if (!follower.Equals(")") && !new Regex(@"^[\+\-*/]$").IsMatch(follower))
                         throw new FormulaFormatException("Incorrect formatting of text");
                 }
             }
