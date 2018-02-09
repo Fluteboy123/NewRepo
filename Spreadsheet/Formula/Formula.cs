@@ -58,7 +58,7 @@ namespace Formulas
                     throw new FormulaFormatException("The number of right parentheses is larger than the number of left parentheses");
             }
 
-            if(tokens.Count == 0)//Rule #2
+            if (tokens.Count == 0)//Rule #2
             {
                 throw new FormulaFormatException("No tokens found");
             }
@@ -66,21 +66,21 @@ namespace Formulas
             if (!tokens[0].Equals("(") && !new Regex(@"[a-zA-Z][0-9a-zA-Z]*").IsMatch((string)tokens[0]) && !Double.TryParse((string)tokens[0], out temp))//Rule #5
                 throw new FormulaFormatException("First character is improperly formatted");
 
-            if (leftPar!=rightPar)//Rule #4
+            if (leftPar != rightPar)//Rule #4
                 throw new FormulaFormatException("The number of left and right parentheses is uneven");
 
-            if (!tokens[tokens.Count-1].Equals(")") && !new Regex(@"[a-zA-Z][0-9a-zA-Z]*").IsMatch((string)tokens[tokens.Count - 1]) && !Double.TryParse((string)tokens[tokens.Count -1], out temp))//Rule #6
+            if (!tokens[tokens.Count - 1].Equals(")") && !new Regex(@"[a-zA-Z][0-9a-zA-Z]*").IsMatch((string)tokens[tokens.Count - 1]) && !Double.TryParse((string)tokens[tokens.Count - 1], out temp))//Rule #6
                 throw new FormulaFormatException("Last character is improperly formatted");
 
-            for(int i = 0;i<tokens.Count-1;i++)
+            for (int i = 0; i < tokens.Count - 1; i++)
             {
-                if(tokens[i].Equals("(") || new Regex(@"[\+\-*/]").IsMatch((string)tokens[i]))//Rule #7
+                if (tokens[i].Equals("(") || new Regex(@"[\+\-*/]").IsMatch((string)tokens[i]))//Rule #7
                 {
                     String follower = (string)tokens[i + 1];
                     if (!follower.Equals("(") && !Double.TryParse(follower, out temp) && !new Regex(@"[a-zA-Z][0-9a-zA-Z]*").IsMatch(follower))
                         throw new FormulaFormatException("Incorrect formatting of text after a parenthesis or operator");
                 }
-                else if(Double.TryParse((string)tokens[i], out temp) || new Regex(@"[a-zA-Z][0-9a-zA-Z]*").IsMatch((string)tokens[i])||tokens[i].Equals(")"))//Rule #8
+                else if (Double.TryParse((string)tokens[i], out temp) || new Regex(@"[a-zA-Z][0-9a-zA-Z]*").IsMatch((string)tokens[i]) || tokens[i].Equals(")"))//Rule #8
                 {
                     String follower = (string)tokens[i + 1];
                     if (!follower.Equals(")") && !new Regex(@"[\+\-*/]").IsMatch(follower))
@@ -99,7 +99,7 @@ namespace Formulas
         /// </summary>
         public double Evaluate(Lookup lookup)
         {
-            return Calculate(lookup,0,tokens.Count);
+            return Calculate(lookup, 0, tokens.Count);
         }
 
         private double Calculate(Lookup lookup, int startIndex, int endIndex)
@@ -109,23 +109,14 @@ namespace Formulas
             double num = 0;
             ArrayList parens = new ArrayList();
             //Order of Operations
-            if((parens = parenPairs(startIndex,endIndex)).Count !=0)//Parentheses
+            if ((parens = parenPairs(startIndex, endIndex)).Count != 0)//Parentheses
             {
-                for(int i=0;i<parens.Count;i+=2)
+                for (int i = 0; i < parens.Count; i += 2)
                 {
                     double result = Calculate(lookup, (int)parens[i] + 1, (int)parens[i + 1]);
                     for (int j = (int)parens[i]; j <= (int)parens[i + 1]; j++)
                         tokens[j] = "";
                     tokens[(int)parens[i] + 1] = result.ToString();
-                }
-            }
-
-            for(int i = startIndex;i<endIndex;i++)//Subtraction
-            {
-                if(tokens[i].Equals("-"))
-                {
-                    num = Calculate(lookup, startIndex, i) - Calculate(lookup, i + 1, endIndex);
-                    return num;
                 }
             }
 
@@ -138,11 +129,23 @@ namespace Formulas
                 }
             }
 
+            for (int i = startIndex; i < endIndex; i++)//Subtraction
+            {
+                if (tokens[i].Equals("-"))
+                {
+                    num = Calculate(lookup, startIndex, i) - Calculate(lookup, i + 1, endIndex);
+                    return num;
+                }
+            }
+
             for (int i = startIndex; i < endIndex; i++)//Division
             {
                 if (tokens[i].Equals("/"))
                 {
-                    num = Calculate(lookup, startIndex, i) / Calculate(lookup, i + 1, endIndex);
+                    double denom = Calculate(lookup, i + 1, endIndex);
+                    if (denom == 0)
+                        throw new FormulaEvaluationException("Attempted Division By Zero");
+                    num = Calculate(lookup, startIndex, i) / denom;
                     return num;
                 }
             }
@@ -193,12 +196,12 @@ namespace Formulas
         {
             ArrayList indexList = new ArrayList();
             int parenLevel = 0;
-            for(int i = startIndex;i<endIndex;i++)
+            for (int i = startIndex; i < endIndex; i++)
             {
                 if (tokens[i].Equals("("))
                 {
                     parenLevel++;
-                    if(parenLevel == 1)
+                    if (parenLevel == 1)
                         indexList.Add(i);
                 }
                 if (tokens[i].Equals(")"))
