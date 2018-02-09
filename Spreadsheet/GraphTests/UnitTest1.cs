@@ -15,7 +15,7 @@ namespace GraphTests
             DependencyGraph dg = new DependencyGraph();
             dg.AddDependency("Cause","Effect");
             dg.RemoveDependency("Cause", "Effect");
-            Assert.AreEqual(dg.Size, 2);
+            Assert.AreEqual(dg.Size, 0);
         }
         [TestMethod]
         public void TestForNoDuplicates()
@@ -23,7 +23,7 @@ namespace GraphTests
             DependencyGraph dg = new DependencyGraph();
             dg.AddDependency("Cause", "Effect");
             dg.AddDependency("Effect", "Action");
-            Assert.AreEqual(dg.Size, 3);
+            Assert.AreEqual(dg.Size, 2);
         }
         [TestMethod]
         public void TestforListAccuracy()
@@ -131,7 +131,7 @@ namespace GraphTests
             dg.AddDependency("G", "D");
             dg.ReplaceDependents("D", replacements);
             dg.ReplaceDependees("D", replacements);
-            Assert.AreEqual(dg.Size, 10);
+            Assert.AreEqual(dg.Size, 6);
         }
         [TestClass()]
         public class DependencyGraphTest

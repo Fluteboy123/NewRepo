@@ -1,4 +1,4 @@
-﻿// Skeleton implementation written by Joe Zachary for CS 3500, January 2018.
+﻿// Finished class by Samuel Englert for CS 3500, January 2018.
 
 using System;
 using System.Collections;
@@ -76,7 +76,7 @@ namespace Dependencies
             Node n = head == null ? (head = new Node(s)) : head.AddOrFindString(s);
             ArrayList d = new ArrayList();
             IEnumerator deps = n.Dependents().GetEnumerator();
-            while(deps.MoveNext())
+            while (deps.MoveNext())
             {
                 d.Add(deps.Current);
             }
@@ -165,7 +165,7 @@ namespace Dependencies
         /// t in newDependents, adds the dependency (s,t).
         /// Requires s != null and t != null.
         /// </summary>
-        public void ReplaceDependents(string s, IEnumerable<string> newDependents)
+        public void ReplaceDependents(string s, IEnumerable<string> newDependents)//If a string is null, remove all recently added nodes, and put the new ones back
         {
             if (s == null)
                 throw new ArgumentNullException();
@@ -180,7 +180,7 @@ namespace Dependencies
                 Node x = (Node)deps.Current;
                 backup.Add(x);
             }
-            foreach(Node x in backup)
+            foreach (Node x in backup)
             {
                 n.RemoveDependent(x);
             }
@@ -225,16 +225,16 @@ namespace Dependencies
                 Node x = (Node)deps.Current;
                 backup.Add(x);
             }
-            foreach(Node x in backup)
+            foreach (Node x in backup)
             {
                 x.RemoveDependent(n);
             }
             //Add the new ones
             while (enumerator.MoveNext())
             {
-                if ((string)(enumerator.Current) == null)
+                if ((string)(enumerator.Current) == null)//If a string is null, remove all recently added nodes, and put the new ones back
                 {
-                    foreach(String x in newDependees)
+                    foreach (String x in newDependees)
                     {
                         try
                         {
@@ -242,7 +242,7 @@ namespace Dependencies
                         }
                         catch (Exception) { }
                     }
-                    foreach(Node x in backup)
+                    foreach (Node x in backup)
                         x.AddDependent(n);
                     throw new ArgumentNullException();
                 }
@@ -259,7 +259,7 @@ namespace Dependencies
             //Variables
             private string name;
             private Node Left { get; set; }
-            private Node Right {get;set;}
+            private Node Right { get; set; }
             private ArrayList dependents = new ArrayList(), dependees = new ArrayList();
             /// <summary>
             /// Creates a new node with the specified string. Used mostly in the class itself. Unless head is null, use head.AddOrFindString() to add a Node
@@ -305,7 +305,7 @@ namespace Dependencies
             /// </summary>
             public IEnumerable<Node> Dependents()
             {
-                foreach(Node x in dependents)
+                foreach (Node x in dependents)
                 {
                     yield return x;
                 }
@@ -319,8 +319,10 @@ namespace Dependencies
             {
                 int index = dependents.IndexOf(d);
                 if (index >= 0)
+                {
                     dependents.RemoveAt(index);
-                d.RemoveDependee(this);
+                    d.RemoveDependee(this);
+                }
             }
             /// <summary>
             /// Takes the node d and makes it a dependee of the current Node, if it isn't already a dependee. 
@@ -351,15 +353,15 @@ namespace Dependencies
                 if (index >= 0)
                     dependees.RemoveAt(index);
                 else
-                    throw new ArgumentException(message: "Dependee of " + name+" not found");
+                    throw new ArgumentException(message: "Dependee of " + name + " not found");
             }
             /// <summary>
             /// Returns the size of the tree starting from this node
             /// </summary>
             public int GetSize()
             {
-                int size = 1;
-                size += Left == null? 0: Left.GetSize();
+                int size = dependents.Count;
+                size += Left == null ? 0 : Left.GetSize();
                 size += Right == null ? 0 : Right.GetSize();
                 return size;
             }
