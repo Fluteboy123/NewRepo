@@ -58,6 +58,24 @@ namespace Dependencies
         {
         }
 
+        public DependencyGraph(DependencyGraph dg)
+        {
+            head = CreateNewNode(dg.head);
+        }
+
+        private Node CreateNewNode(Node n)
+        {
+            if (n == null)
+                return null;
+            Node r = new Node(n.Name)
+            {
+                Left = CreateNewNode(n.Left),
+                Right = CreateNewNode(n.Right)
+            };
+            return r;
+        }
+        
+
         /// <summary>
         /// The number of dependencies in the DependencyGraph.
         /// </summary>
@@ -258,8 +276,8 @@ namespace Dependencies
         {
             //Variables
             private string name;
-            private Node Left { get; set; }
-            private Node Right { get; set; }
+            public Node Left { get; set; }
+            public Node Right { get; set; }
             private ArrayList dependents = new ArrayList(), dependees = new ArrayList();
             /// <summary>
             /// Creates a new node with the specified string. Used mostly in the class itself. Unless head is null, use head.AddOrFindString() to add a Node
