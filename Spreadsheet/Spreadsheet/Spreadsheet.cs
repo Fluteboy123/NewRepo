@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -50,6 +51,8 @@ namespace SS
     /// </summary>
     public class Spreadsheet : AbstractSpreadsheet
     {
+        Cell head = null;
+        Dependencies.DependencyGraph dg = new Dependencies.DependencyGraph();
         /// <summary>
         /// Creates a new <see cref="Spreadsheet"/>
         /// </summary>
@@ -66,7 +69,11 @@ namespace SS
         /// </summary>
         public override object GetCellContents(string name)
         {
-            throw new NotImplementedException();
+            if (head == null)
+                return false;
+            if (!head.CreateOrAddCell(name, out Cell c))
+                throw new InvalidNameException();
+            return c.getContents();
         }
 
         /// <summary>
@@ -74,7 +81,8 @@ namespace SS
         /// </summary>
         public override IEnumerable<string> GetNamesOfAllNonemptyCells()
         {
-            throw new NotImplementedException();
+            foreach (Cell x in head.GetNonEmptyCells())
+                yield return x.Name;
         }
 
         /// <summary>
@@ -89,7 +97,17 @@ namespace SS
         /// </summary>
         public override ISet<string> SetCellContents(string name, double number)
         {
-            throw new NotImplementedException();
+            if (head == null)
+                throw new InvalidNameException();
+            else
+            {
+                if(head.CreateOrAddCell(name, out Cell c))
+                    c.Contents = number;
+                else
+                {
+                    
+                }
+            }
         }
 
         /// <summary>
@@ -151,10 +169,70 @@ namespace SS
             throw new NotImplementedException();
         }
 
-        private struct Cell
+        private class Cell
         {
             public String Name { get; private set; }
-            public Object Contents { private get; set; }
+            public Object Contents { get; set; }
+            public Cell Left { get; set; }
+            public Cell Right { get; set; }
+            public Cell(string name, object contents)
+            {
+                Name = name;
+                Contents = contents;
+            }
+
+            public object getContents()
+            {
+                return Contents;
+            }
+
+            public Boolean CreateOrAddCell(String name, out Cell foundCell)
+            {
+                if (Name.Equals(name))
+                {
+                    foundCell = this;
+                    return true;
+                }
+                else
+                {
+                    if(name.CompareTo(Name)<0)
+                    {
+                        if (Left == null)
+                        {
+                            foundCell = (Left = new Cell(name, ""));
+                            return false;
+                        }
+                        else
+                        {
+                            return Left.CreateOrAddCell(name, out foundCell);
+                        }
+                    }
+                    else
+                    {
+                        if (Right == null)
+                        {
+                            foundCell = (Right = new Cell(name, null));
+                            return false;
+                        }
+                        else
+                        {
+                            return Right.CreateOrAddCell(name, out foundCell);
+                        }
+                    }
+                }
+            }
+
+            public ArrayList GetNonEmptyCells()
+            {
+                ArrayList r = new ArrayList();
+                if (getContents() != null)
+                    r.Add(this);
+                foreach (Cell x in Left.GetNonEmptyCells())
+                    r.Add(x);
+                foreach (Cell x in Right.GetNonEmptyCells())
+                    r.Add(x);
+                return r;
+            }
         }
     }
 }
