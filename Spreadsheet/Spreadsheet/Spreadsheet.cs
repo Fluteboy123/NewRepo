@@ -73,7 +73,7 @@ namespace SS
                 return false;
             if (!head.CreateOrAddCell(name, out Cell c))
                 throw new InvalidNameException();
-            return c.getContents();
+            return c.GetContents();
         }
 
         /// <summary>
@@ -101,12 +101,20 @@ namespace SS
                 throw new InvalidNameException();
             else
             {
+                HashSet<string> names = new HashSet<string>();
                 if(head.CreateOrAddCell(name, out Cell c))
-                    c.Contents = number;
+                    c.SetContents(number);
                 else
                 {
-                    
+                    throw new InvalidNameException();
                 }
+                names.Add(name);
+                IEnumerator deps = dg.GetDependents(name).GetEnumerator();
+                while(deps.MoveNext())
+                {
+                    names.Add(deps.Current.ToString());
+                }
+                return names;
             }
         }
 
@@ -124,7 +132,25 @@ namespace SS
         /// </summary>
         public override ISet<string> SetCellContents(string name, string text)
         {
-            throw new NotImplementedException();
+            if (head == null)
+                throw new InvalidNameException();
+            else
+            {
+                HashSet<string> names = new HashSet<string>();
+                if (head.CreateOrAddCell(name, out Cell c))
+                    c.SetContents(text);
+                else
+                {
+                    throw new InvalidNameException();
+                }
+                names.Add(name);
+                IEnumerator deps = dg.GetDependents(name).GetEnumerator();
+                while (deps.MoveNext())
+                {
+                    names.Add(deps.Current.ToString());
+                }
+                return names;
+            }
         }
 
         /// <summary>
@@ -144,7 +170,25 @@ namespace SS
         /// </summary>
         public override ISet<string> SetCellContents(string name, Formula formula)
         {
-            throw new NotImplementedException();
+            if (head == null)
+                throw new InvalidNameException();
+            else
+            {
+                HashSet<string> names = new HashSet<string>();
+                if (head.CreateOrAddCell(name, out Cell c))
+                    c.SetContents(formula);
+                else
+                {
+                    throw new InvalidNameException();
+                }
+                names.Add(name);
+                IEnumerator deps = dg.GetDependents(name).GetEnumerator();
+                while (deps.MoveNext())
+                {
+                    names.Add(deps.Current.ToString());
+                }
+                return names;
+            }
         }
 
         /// <summary>
@@ -172,7 +216,7 @@ namespace SS
         private class Cell
         {
             public String Name { get; private set; }
-            public Object Contents { get; set; }
+            private Object Contents;
             public Cell Left { get; set; }
             public Cell Right { get; set; }
             public Cell(string name, object contents)
@@ -181,9 +225,18 @@ namespace SS
                 Contents = contents;
             }
 
-            public object getContents()
+            public object GetContents()
             {
                 return Contents;
+            }
+
+            public void SetContents(double num) => Contents = num;
+
+            public void SetContents(String text) => Contents = text;
+
+            public void SetContents(Formula f)
+            {
+
             }
 
             public Boolean CreateOrAddCell(String name, out Cell foundCell)
@@ -225,13 +278,38 @@ namespace SS
             public ArrayList GetNonEmptyCells()
             {
                 ArrayList r = new ArrayList();
-                if (getContents() != null)
+                if (GetContents() != null)
                     r.Add(this);
                 foreach (Cell x in Left.GetNonEmptyCells())
                     r.Add(x);
                 foreach (Cell x in Right.GetNonEmptyCells())
                     r.Add(x);
                 return r;
+            }
+
+            public Boolean RemoveLeafNode(string title)
+            {
+                if(Name.Equals(title))
+                {
+                    if (Left != null || Right != null)
+                        throw new Exception("Not a leaf Node");
+                    return true;
+                }
+                else if(title.CompareTo(Name)<0)
+                {
+                    if (Left == null)
+                        return false;
+                    if (Left.RemoveLeafNode(title))
+                        Left = null;
+                }
+                else
+                {
+                    if (Right == null)
+                        return false;
+                    if (Right.RemoveLeafNode(title))
+                        Right = null;
+                }
+                return false;
             }
         }
     }
