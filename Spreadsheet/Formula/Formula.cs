@@ -17,7 +17,7 @@ namespace Formulas
     public class Formula
     {
         //Variables
-        private ArrayList tokens;
+        public ArrayList Tokens { get; private set; }
         /// <summary>
         /// Creates a Formula from a string that consists of a standard infix expression composed
         /// from non-negative floating-point numbers (using C#-like syntax for double/int literals), 
@@ -41,14 +41,14 @@ namespace Formulas
         public Formula(String formula)
         {
             double temp;
-            tokens = new ArrayList();
+            Tokens = new ArrayList();
             byte leftPar = 0, rightPar = 0;
             IEnumerator counter = GetTokens(formula).GetEnumerator();
 
             //Adds all tokens while checking for exceptions
             while (counter.MoveNext())
             {
-                tokens.Add(counter.Current);
+                Tokens.Add(counter.Current);
 
                 if (counter.Current.Equals("("))
                     leftPar++;
@@ -58,31 +58,31 @@ namespace Formulas
                     throw new FormulaFormatException("The number of right parentheses is larger than the number of left parentheses");
             }
 
-            if (tokens.Count == 0)//Rule #2
+            if (Tokens.Count == 0)//Rule #2
             {
                 throw new FormulaFormatException("No tokens found");
             }
 
-            if (!tokens[0].Equals("(") && !new Regex(@"[a-zA-Z][0-9a-zA-Z]*").IsMatch((string)tokens[0]) && !Double.TryParse((string)tokens[0], out temp))//Rule #5
+            if (!Tokens[0].Equals("(") && !new Regex(@"[a-zA-Z][0-9a-zA-Z]*").IsMatch((string)Tokens[0]) && !Double.TryParse((string)Tokens[0], out temp))//Rule #5
                 throw new FormulaFormatException("First character is improperly formatted");
 
             if (leftPar != rightPar)//Rule #4
                 throw new FormulaFormatException("The number of left and right parentheses is uneven");
 
-            if (!tokens[tokens.Count - 1].Equals(")") && !new Regex(@"[a-zA-Z][0-9a-zA-Z]*").IsMatch((string)tokens[tokens.Count - 1]) && !Double.TryParse((string)tokens[tokens.Count - 1], out temp))//Rule #6
+            if (!Tokens[Tokens.Count - 1].Equals(")") && !new Regex(@"[a-zA-Z][0-9a-zA-Z]*").IsMatch((string)Tokens[Tokens.Count - 1]) && !Double.TryParse((string)Tokens[Tokens.Count - 1], out temp))//Rule #6
                 throw new FormulaFormatException("Last character is improperly formatted");
 
-            for (int i = 0; i < tokens.Count - 1; i++)
+            for (int i = 0; i < Tokens.Count - 1; i++)
             {
-                if (tokens[i].Equals("(") || new Regex(@"^[\+\-*/]$").IsMatch((string)tokens[i]))//Rule #7
+                if (Tokens[i].Equals("(") || new Regex(@"^[\+\-*/]$").IsMatch((string)Tokens[i]))//Rule #7
                 {
-                    String follower = (string)tokens[i + 1];
+                    String follower = (string)Tokens[i + 1];
                     if (!follower.Equals("(") && !Double.TryParse(follower, out temp) && !new Regex(@"[a-zA-Z][0-9a-zA-Z]*").IsMatch(follower))
                         throw new FormulaFormatException("Incorrect formatting of text after a parenthesis or operator");
                 }
-                else if (Double.TryParse((string)tokens[i], out temp) || new Regex(@"[a-zA-Z][0-9a-zA-Z]*").IsMatch((string)tokens[i]) || tokens[i].Equals(")"))//Rule #8
+                else if (Double.TryParse((string)Tokens[i], out temp) || new Regex(@"[a-zA-Z][0-9a-zA-Z]*").IsMatch((string)Tokens[i]) || Tokens[i].Equals(")"))//Rule #8
                 {
-                    String follower = (string)tokens[i + 1];
+                    String follower = (string)Tokens[i + 1];
                     if (!follower.Equals(")") && !new Regex(@"^[\+\-*/]$").IsMatch(follower))
                         throw new FormulaFormatException("Incorrect formatting of text");
                 }
@@ -99,7 +99,7 @@ namespace Formulas
         /// </summary>
         public double Evaluate(Lookup lookup)
         {
-            return Calculate(lookup, 0, tokens.Count);
+            return Calculate(lookup, 0, Tokens.Count);
         }
 
         private double Calculate(Lookup lookup, int startIndex, int endIndex)
@@ -109,20 +109,20 @@ namespace Formulas
             double num = 0;
             ArrayList parens = new ArrayList();
             //Order of Operations
-            if ((parens = parenPairs(startIndex, endIndex)).Count != 0)//Parentheses
+            if ((parens = ParenPairs(startIndex, endIndex)).Count != 0)//Parentheses
             {
                 for (int i = 0; i < parens.Count; i += 2)
                 {
                     double result = Calculate(lookup, (int)parens[i] + 1, (int)parens[i + 1]);
                     for (int j = (int)parens[i]; j <= (int)parens[i + 1]; j++)
-                        tokens[j] = "";
-                    tokens[(int)parens[i] + 1] = result.ToString();
+                        Tokens[j] = "";
+                    Tokens[(int)parens[i] + 1] = result.ToString();
                 }
             }
 
             for (int i = startIndex; i < endIndex; i++)//Addition
             {
-                if (tokens[i].Equals("+"))
+                if (Tokens[i].Equals("+"))
                 {
                     num = Calculate(lookup, startIndex, i) + Calculate(lookup, i + 1, endIndex);
                     return num;
@@ -131,7 +131,7 @@ namespace Formulas
 
             for (int i = startIndex; i < endIndex; i++)//Subtraction
             {
-                if (tokens[i].Equals("-"))
+                if (Tokens[i].Equals("-"))
                 {
                     num = Calculate(lookup, startIndex, i) - Calculate(lookup, i + 1, endIndex);
                     return num;
@@ -140,7 +140,7 @@ namespace Formulas
 
             for (int i = startIndex; i < endIndex; i++)//Division
             {
-                if (tokens[i].Equals("/"))
+                if (Tokens[i].Equals("/"))
                 {
                     double denom = Calculate(lookup, i + 1, endIndex);
                     if (denom == 0)
@@ -152,7 +152,7 @@ namespace Formulas
 
             for (int i = startIndex; i < endIndex; i++)//Multiplication
             {
-                if (tokens[i].Equals("*"))
+                if (Tokens[i].Equals("*"))
                 {
                     num = Calculate(lookup, startIndex, i) * Calculate(lookup, i + 1, endIndex);
                     return num;
@@ -170,9 +170,9 @@ namespace Formulas
 
             for (int i = startIndex; i < endIndex; i++)//Numbers/Variables
             {
-                if (!tokens[i].Equals(""))
+                if (!Tokens[i].Equals(""))
                 {
-                    if (Double.TryParse((string)tokens[i], out num))
+                    if (Double.TryParse((string)Tokens[i], out num))
                     {
                         return num;
                     }
@@ -180,7 +180,7 @@ namespace Formulas
                     {
                         try
                         {
-                            return lookup((string)(tokens[i]));
+                            return lookup((string)(Tokens[i]));
                         }
                         catch (Exception e)//Rule 1
                         {
@@ -192,19 +192,19 @@ namespace Formulas
             return 0;
         }
 
-        private ArrayList parenPairs(int startIndex, int endIndex)
+        private ArrayList ParenPairs(int startIndex, int endIndex)
         {
             ArrayList indexList = new ArrayList();
             int parenLevel = 0;
             for (int i = startIndex; i < endIndex; i++)
             {
-                if (tokens[i].Equals("("))
+                if (Tokens[i].Equals("("))
                 {
                     parenLevel++;
                     if (parenLevel == 1)
                         indexList.Add(i);
                 }
-                if (tokens[i].Equals(")"))
+                if (Tokens[i].Equals(")"))
                 {
                     parenLevel--;
                     if (parenLevel == 0)

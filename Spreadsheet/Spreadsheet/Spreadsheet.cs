@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Formulas;
 namespace SS
@@ -51,8 +52,8 @@ namespace SS
     /// </summary>
     public class Spreadsheet : AbstractSpreadsheet
     {
-        Cell head = null;
-        Dependencies.DependencyGraph dg = new Dependencies.DependencyGraph();
+        private static Cell head = null;
+        private static Dependencies.DependencyGraph dg = new Dependencies.DependencyGraph();
         /// <summary>
         /// Creates a new <see cref="Spreadsheet"/>
         /// </summary>
@@ -69,9 +70,7 @@ namespace SS
         /// </summary>
         public override object GetCellContents(string name)
         {
-            if (head == null)
-                return false;
-            if (!head.CreateOrAddCell(name, out Cell c))
+            if (!Cell.CreateOrAddCell(name, out Cell c))
                 throw new InvalidNameException();
             return c.GetContents();
         }
@@ -97,25 +96,16 @@ namespace SS
         /// </summary>
         public override ISet<string> SetCellContents(string name, double number)
         {
-            if (head == null)
-                throw new InvalidNameException();
+            HashSet<string> names = new HashSet<string>();
+            if(Cell.CreateOrAddCell(name, out Cell c))
+                c.SetContents(number);
             else
-            {
-                HashSet<string> names = new HashSet<string>();
-                if(head.CreateOrAddCell(name, out Cell c))
-                    c.SetContents(number);
-                else
-                {
-                    throw new InvalidNameException();
-                }
-                names.Add(name);
-                IEnumerator deps = dg.GetDependents(name).GetEnumerator();
-                while(deps.MoveNext())
-                {
-                    names.Add(deps.Current.ToString());
-                }
-                return names;
-            }
+                throw new InvalidNameException();
+            names.Add(name);
+            IEnumerator deps = dg.GetDependents(name).GetEnumerator();
+            while(deps.MoveNext())
+                names.Add(deps.Current.ToString());
+            return names;
         }
 
         /// <summary>
@@ -132,25 +122,16 @@ namespace SS
         /// </summary>
         public override ISet<string> SetCellContents(string name, string text)
         {
-            if (head == null)
-                throw new InvalidNameException();
+            HashSet<string> names = new HashSet<string>();
+            if (Cell.CreateOrAddCell(name, out Cell c))
+               c.SetContents(text);
             else
-            {
-                HashSet<string> names = new HashSet<string>();
-                if (head.CreateOrAddCell(name, out Cell c))
-                    c.SetContents(text);
-                else
-                {
-                    throw new InvalidNameException();
-                }
-                names.Add(name);
-                IEnumerator deps = dg.GetDependents(name).GetEnumerator();
-                while (deps.MoveNext())
-                {
-                    names.Add(deps.Current.ToString());
-                }
-                return names;
-            }
+                throw new InvalidNameException();
+            names.Add(name);
+            IEnumerator deps = dg.GetDependents(name).GetEnumerator();
+            while (deps.MoveNext())
+                names.Add(deps.Current.ToString());
+            return names;
         }
 
         /// <summary>
@@ -175,7 +156,7 @@ namespace SS
             else
             {
                 HashSet<string> names = new HashSet<string>();
-                if (head.CreateOrAddCell(name, out Cell c))
+                if (Cell.CreateOrAddCell(name, out Cell c))
                     c.SetContents(formula);
                 else
                 {
@@ -210,7 +191,13 @@ namespace SS
         /// </summary>
         protected override IEnumerable<string> GetDirectDependents(string name)
         {
-            throw new NotImplementedException();
+            if (name == null)
+                throw new ArgumentNullException();
+            if (!Cell.CreateOrAddCell(name, out Cell c))
+                throw new InvalidNameException();
+            IEnumerator x = dg.GetDependents(name).GetEnumerator();
+            while (x.MoveNext())
+                yield return (String)(x.Current);
         }
 
         private class Cell
@@ -236,43 +223,63 @@ namespace SS
 
             public void SetContents(Formula f)
             {
-
+                String varPattern = @"[a-zA-Z][0-9a-zA-Z]*";
+                ArrayList varNames = new ArrayList();
+                foreach(String x in f.Tokens)
+                {
+                    if (new Regex(varPattern).IsMatch(x))
+                    {
+                        if (!CreateOrAddCell(x, out Cell c))
+                            throw new InvalidNameException();
+                        dg.AddDependency(x, Name);
+                    }
+                }
             }
 
-            public Boolean CreateOrAddCell(String name, out Cell foundCell)
+            public static Boolean CreateOrAddCell(String name, out Cell foundCell)
             {
-                if (Name.Equals(name))
+                if(head == null)
                 {
-                    foundCell = this;
-                    return true;
+                    foundCell = (head = new Cell(name, null));
+                    return false;
                 }
-                else
+                Cell c = head;
+                while (c != null)
                 {
-                    if(name.CompareTo(Name)<0)
+                    if (c.Name.Equals(name))
                     {
-                        if (Left == null)
-                        {
-                            foundCell = (Left = new Cell(name, ""));
-                            return false;
-                        }
-                        else
-                        {
-                            return Left.CreateOrAddCell(name, out foundCell);
-                        }
+                        foundCell = c;
+                        return true;
                     }
                     else
                     {
-                        if (Right == null)
+                        if (name.CompareTo(c.Name) < 0)
                         {
-                            foundCell = (Right = new Cell(name, null));
-                            return false;
+                            if (c.Left == null)
+                            {
+                                foundCell = (c.Left = new Cell(name, ""));
+                                return false;
+                            }
+                            else
+                            {
+                                c = c.Left;
+                            }
                         }
                         else
                         {
-                            return Right.CreateOrAddCell(name, out foundCell);
+                            if (c.Right == null)
+                            {
+                                foundCell = (c.Right = new Cell(name, null));
+                                return false;
+                            }
+                            else
+                            {
+                                c = c.Right;
+                            }
                         }
                     }
                 }
+                throw new FieldAccessException();
             }
 
             public ArrayList GetNonEmptyCells()
