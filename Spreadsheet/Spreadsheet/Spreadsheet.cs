@@ -71,7 +71,10 @@ namespace SS
         public override object GetCellContents(string name)
         {
             if (!Cell.CreateOrAddCell(name, out Cell c))
+            {
+                Cell.RemoveLeafNode(name);
                 throw new InvalidNameException();
+            }
             return c.GetContents();
         }
 
@@ -96,13 +99,22 @@ namespace SS
         /// </summary>
         public override ISet<string> SetCellContents(string name, double number)
         {
+            IEnumerator deps = dg.GetDependees(name).GetEnumerator();
+            while(deps.MoveNext())
+            {
+                dg.RemoveDependency((String)deps.Current, name);
+            }
+
             HashSet<string> names = new HashSet<string>();
-            if(Cell.CreateOrAddCell(name, out Cell c))
+            if (Cell.CreateOrAddCell(name, out Cell c))
                 c.SetContents(number);
             else
+            {
+                Cell.RemoveLeafNode(name);
                 throw new InvalidNameException();
+            }
             names.Add(name);
-            IEnumerator deps = dg.GetDependents(name).GetEnumerator();
+            deps = dg.GetDependents(name).GetEnumerator();
             while(deps.MoveNext())
                 names.Add(deps.Current.ToString());
             return names;
@@ -122,16 +134,13 @@ namespace SS
         /// </summary>
         public override ISet<string> SetCellContents(string name, string text)
         {
-            HashSet<string> names = new HashSet<string>();
             if (Cell.CreateOrAddCell(name, out Cell c))
-               c.SetContents(text);
+                return SetCellContents(name, new Formula(text));
             else
+            {
+                Cell.RemoveLeafNode(name);
                 throw new InvalidNameException();
-            names.Add(name);
-            IEnumerator deps = dg.GetDependents(name).GetEnumerator();
-            while (deps.MoveNext())
-                names.Add(deps.Current.ToString());
-            return names;
+            }
         }
 
         /// <summary>
@@ -151,25 +160,27 @@ namespace SS
         /// </summary>
         public override ISet<string> SetCellContents(string name, Formula formula)
         {
-            if (head == null)
-                throw new InvalidNameException();
+            IEnumerator deps = dg.GetDependees(name).GetEnumerator();
+            while (deps.MoveNext())
+            {
+                dg.RemoveDependency((String)deps.Current, name);
+            }
+
+            HashSet<string> names = new HashSet<string>();
+            if (Cell.CreateOrAddCell(name, out Cell c))
+                c.SetContents(formula);
             else
             {
-                HashSet<string> names = new HashSet<string>();
-                if (Cell.CreateOrAddCell(name, out Cell c))
-                    c.SetContents(formula);
-                else
-                {
-                    throw new InvalidNameException();
-                }
-                names.Add(name);
-                IEnumerator deps = dg.GetDependents(name).GetEnumerator();
-                while (deps.MoveNext())
-                {
-                    names.Add(deps.Current.ToString());
-                }
-                return names;
+                Cell.RemoveLeafNode(name);
+                throw new InvalidNameException();
             }
+            names.Add(name);
+            deps = dg.GetDependents(name).GetEnumerator();
+            while (deps.MoveNext())
+            {
+                names.Add(deps.Current.ToString());
+            }
+            return names;
         }
 
         /// <summary>
@@ -194,7 +205,10 @@ namespace SS
             if (name == null)
                 throw new ArgumentNullException();
             if (!Cell.CreateOrAddCell(name, out Cell c))
+            {
+                Cell.RemoveLeafNode(name);
                 throw new InvalidNameException();
+            }
             IEnumerator x = dg.GetDependents(name).GetEnumerator();
             while (x.MoveNext())
                 yield return (String)(x.Current);
@@ -230,8 +244,11 @@ namespace SS
                     if (new Regex(varPattern).IsMatch(x))
                     {
                         if (!CreateOrAddCell(x, out Cell c))
+                        {
+                            RemoveLeafNode(x);
                             throw new InvalidNameException();
-                        dg.AddDependency(x, Name);
+                        }
+                            dg.AddDependency(x, Name);
                     }
                 }
             }
@@ -294,29 +311,45 @@ namespace SS
                 return r;
             }
 
-            public Boolean RemoveLeafNode(string title)
+            public static void RemoveLeafNode(string title)
             {
-                if(Name.Equals(title))
+                if (head == null)
+                    return;
+                Cell c = head;
+                if(c.Name.Equals(title))
                 {
-                    if (Left != null || Right != null)
-                        throw new Exception("Not a leaf Node");
-                    return true;
+                    if (c.Left != null || c.Right != null)
+                        throw new ArgumentException("Not a leaf Node");
+                    head = null;
+                    return;
                 }
-                else if(title.CompareTo(Name)<0)
+                while (c != null)
                 {
-                    if (Left == null)
-                        return false;
-                    if (Left.RemoveLeafNode(title))
-                        Left = null;
+                    if (title.CompareTo(c.Name) < 0)
+                    {
+                        if (c.Left == null)
+                            return;
+                        if (c.Left.Name.Equals(title))
+                        {
+                            if (c.Left.Left != null || c.Left.Right != null)
+                                throw new ArgumentException("Not a leaf Node");
+                            c.Left = null;
+                        }
+                        c = c.Left;
+                    }
+                    else
+                    {
+                        if (c.Right == null)
+                            return;
+                        if (c.Right.Name.Equals(title))
+                        {
+                            if (c.Right.Left != null || c.Right.Right != null)
+                                throw new ArgumentException("Not a leaf Node");
+                            c.Right = null;
+                        }
+                        c = c.Right;
+                    }
                 }
-                else
-                {
-                    if (Right == null)
-                        return false;
-                    if (Right.RemoveLeafNode(title))
-                        Right = null;
-                }
-                return false;
             }
         }
     }
