@@ -114,7 +114,7 @@ namespace SS
                 throw new InvalidNameException();
             }
             names.Add(name);
-            deps = dg.GetDependents(name).GetEnumerator();
+            deps = GetCellsToRecalculate(name).GetEnumerator();
             while(deps.MoveNext())
                 names.Add(deps.Current.ToString());
             return names;
@@ -175,7 +175,7 @@ namespace SS
                 throw new InvalidNameException();
             }
             names.Add(name);
-            deps = dg.GetDependents(name).GetEnumerator();
+            deps = GetCellsToRecalculate(name).GetEnumerator();
             while (deps.MoveNext())
             {
                 names.Add(deps.Current.ToString());
@@ -228,7 +228,21 @@ namespace SS
 
             public object GetContents()
             {
-                return Contents;
+                if (Contents.Equals(typeof(double))||Contents.Equals(typeof(String)))
+                    return Contents;
+                else if(Contents.Equals(typeof(Formula)))
+                {
+                    try
+                    {
+                        ((Formula)Contents).Evaluate(s=>(double)CreateOrAddCell(s).GetContents());
+                        return (Formula)Contents;
+                    }
+                    catch(Exception e)
+                    {
+                        return e;
+                    }
+                }
+                throw new FormatException("Invalid type");
             }
 
             public void SetContents(double num) => Contents = num;
@@ -248,7 +262,7 @@ namespace SS
                             RemoveLeafNode(x);
                             throw new InvalidNameException();
                         }
-                            dg.AddDependency(x, Name);
+                        dg.AddDependency(x, Name);
                     }
                 }
             }
@@ -297,6 +311,12 @@ namespace SS
                     }
                 }
                 throw new FieldAccessException();
+            }
+
+            public static Cell CreateOrAddCell(string name)
+            {
+                Cell.CreateOrAddCell(name, out Cell c);
+                return c;
             }
 
             public ArrayList GetNonEmptyCells()
