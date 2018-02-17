@@ -104,6 +104,7 @@ namespace SS
                 Cell.RemoveLeafNode(name);
                 throw new InvalidNameException();
             }
+            
             IEnumerator deps = dg.GetDependees(name).GetEnumerator();
             while(deps.MoveNext())
             {
@@ -226,6 +227,7 @@ namespace SS
 
         private class Cell
         {
+            private Type t = null;
             public String Name { get; private set; }
             private Object Contents;
             public Cell Left { get; set; }
@@ -238,11 +240,11 @@ namespace SS
 
             public object GetContents()
             {
-                if (Contents == null)
+                if (t == null)
                     return null;
-                if (Contents.Equals(typeof(double))||Contents.Equals(typeof(String)))
+                if (t.Equals(typeof(double))||t.Equals(typeof(String)))
                     return Contents;
-                else if(Contents.Equals(typeof(Formula)))
+                else if(t.Equals(typeof(Formula)))
                 {
                     try
                     {
@@ -257,7 +259,11 @@ namespace SS
                 throw new FormatException("Invalid type");
             }
 
-            public void SetContents(double num) => Contents = num;
+            public void SetContents(double num)
+            {
+                t = typeof(double);
+                Contents = num;
+            }
 
             public void SetContents(String text)
             {
@@ -277,6 +283,7 @@ namespace SS
                         dg.AddDependency(x, Name);
                     }
                 }
+                t = typeof(String);
             }
 
             public void SetContents(Formula f)
@@ -288,14 +295,10 @@ namespace SS
                 {
                     if (new Regex(varPattern).IsMatch(x))
                     {
-                        if (!CreateOrAddCell(x, out Cell c))
-                        {
-                            RemoveLeafNode(x);
-                            throw new InvalidNameException();
-                        }
                         dg.AddDependency(x, Name);
                     }
                 }
+                t = typeof(Formula);
             }
 
             public static Boolean CreateOrAddCell(String name, out Cell foundCell)
