@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SS;
 
@@ -19,7 +20,23 @@ namespace SpreadsheetTests
             Spreadsheet ss = new Spreadsheet();
             Assert.AreEqual(ss.GetCellContents("A2"), null);
             ss.SetCellContents("A2", 3.14);
+            ss.SetCellContents("A1", "A2+5");
+            ss.SetCellContents("A3", new Formulas.Formula("A2+1"));
+            Assert.AreEqual(ss.GetCellContents("A1"), "A2+5");
             Assert.AreEqual(ss.GetCellContents("A2"), 3.14);
+            Type t = ss.GetCellContents("A3").GetType();
+            Assert.AreEqual(t, typeof(Formulas.Formula));
+        }
+        /// <summary>
+        /// For some reason, this test only passes when running by itself
+        /// </summary>
+        [TestMethod]
+        public void TestNonEmptyCellMethod()
+        {
+            Spreadsheet ss = new Spreadsheet();
+            ss.SetCellContents("A1", 3.14);
+            IEnumerator en = ss.GetNamesOfAllNonemptyCells().GetEnumerator();
+            Assert.AreEqual(en.MoveNext(), true);
         }
         [TestMethod]
         [ExpectedException(typeof(InvalidNameException))]

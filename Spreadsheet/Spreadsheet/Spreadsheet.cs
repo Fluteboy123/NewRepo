@@ -83,8 +83,9 @@ namespace SS
         /// </summary>
         public override IEnumerable<string> GetNamesOfAllNonemptyCells()
         {
-            foreach (Cell x in head.GetNonEmptyCells())
-                yield return x.Name;
+            if (head != null)
+                foreach (Cell x in head.GetNonEmptyCells())
+                    yield return x.Name;
         }
 
         /// <summary>
@@ -144,7 +145,7 @@ namespace SS
             {
                 dg.RemoveDependency((String)deps.Current, name);
             }
-            c.SetContents(name);
+            c.SetContents(text);
             HashSet<String> names = new HashSet<string>();
             names.Add(name);
             deps = GetCellsToRecalculate(name).GetEnumerator();
@@ -242,7 +243,7 @@ namespace SS
             {
                 if (t == null)
                     return null;
-                if (t.Equals(typeof(double))||t.Equals(typeof(String)))
+                if (t.Equals(typeof(double))|| t.Equals(typeof(String)))
                     return Contents;
                 else if(t.Equals(typeof(Formula)))
                 {
@@ -358,10 +359,12 @@ namespace SS
                 ArrayList r = new ArrayList();
                 if (GetContents() != null)
                     r.Add(this);
-                foreach (Cell x in Left.GetNonEmptyCells())
-                    r.Add(x);
-                foreach (Cell x in Right.GetNonEmptyCells())
-                    r.Add(x);
+                if(Left!=null)
+                    foreach (Cell x in Left.GetNonEmptyCells())
+                        r.Add(x);
+                if(Right!=null)
+                    foreach (Cell x in Right.GetNonEmptyCells())
+                        r.Add(x);
                 return r;
             }
 
