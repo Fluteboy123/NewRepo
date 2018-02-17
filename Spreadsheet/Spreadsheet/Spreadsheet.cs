@@ -228,17 +228,45 @@ namespace SS
 
         private class Cell
         {
+            /// <summary>
+            /// Remembers the type of Contents, because I simply don't have the time to do anything better
+            /// </summary>
             private Type t = null;
+            
+            /// <summary>
+            /// Name of the Cell
+            /// </summary>
             public String Name { get; private set; }
+            
+            /// <summary>
+            /// Contents (String, double or Formula)
+            /// </summary>
             private Object Contents;
+            
+            /// <summary>
+            /// Left child
+            /// </summary>
             public Cell Left { get; set; }
+           
+            /// <summary>
+            /// Right child
+            /// </summary>
             public Cell Right { get; set; }
+            
+            /// <summary>
+            /// Creates a new <see cref="Cell"/>
+            /// </summary>
+            /// <param name="name">Name of the <see cref="Cell"/> </param>
+            /// <param name="contents">Contents of the <see cref="Cell"/></param>
             public Cell(string name, object contents)
             {
                 Name = name;
                 Contents = contents;
             }
 
+            /// <summary>
+            /// </summary>
+            /// <returns>The contents of the <see cref="Cell"/></returns>
             public object GetContents()
             {
                 if (t == null)
@@ -260,12 +288,20 @@ namespace SS
                 throw new FormatException("Invalid type");
             }
 
+            /// <summary>
+            /// Sets the contents to the specified <see langword="double"/>
+            /// </summary>
+            /// <param name="num">The <see langword="double"/> to become Contents</param>
             public void SetContents(double num)
             {
                 t = typeof(double);
                 Contents = num;
             }
 
+            /// <summary>
+            /// Sets the contents to the specified <see cref="String"/>
+            /// </summary>
+            /// <param name="text">The <see cref="String"/> to become Contents</param>
             public void SetContents(String text)
             {
                 Contents = text;
@@ -287,6 +323,10 @@ namespace SS
                 t = typeof(String);
             }
 
+            /// <summary>
+            /// Sets the contents to the specified <see cref="Formula"/>
+            /// </summary>
+            /// <param name="f">The <see cref="Formula"/> to become Contents</param>
             public void SetContents(Formula f)
             {
                 Contents = f;
@@ -302,6 +342,23 @@ namespace SS
                 t = typeof(Formula);
             }
 
+            /// <summary>
+            /// Creates a <see cref="Cell"/> with the specified name if it doesn't already exist. An error is thrown if the name isn't a letter, followed by numbers
+            /// </summary>
+            /// <param name="name">The name of the <see cref="Cell"/></param>
+            /// <returns>The <see cref="Cell"/> with the name</returns>
+            public static Cell CreateOrAddCell(string name)
+            {
+                Cell.CreateOrAddCell(name, out Cell c);
+                return c;
+            }
+
+            /// <summary>
+            /// Recursive feature of the other CreateOrAddCell method
+            /// </summary>
+            /// <param name="name">The name of the <see cref="Cell"/></param>
+            /// <param name="foundCell">The <see cref="Cell"/> to be returned</param>
+            /// <returns>The <see cref="Cell"/> with the name</returns>
             public static Boolean CreateOrAddCell(String name, out Cell foundCell)
             {
                 if(head == null)
@@ -347,13 +404,11 @@ namespace SS
                 }
                 throw new FieldAccessException();
             }
-
-            public static Cell CreateOrAddCell(string name)
-            {
-                Cell.CreateOrAddCell(name, out Cell c);
-                return c;
-            }
-
+            
+            /// <summary>
+            /// Returns all non-empty cells
+            /// </summary>
+            /// <returns>All non-empty cells</returns>
             public ArrayList GetNonEmptyCells()
             {
                 ArrayList r = new ArrayList();
@@ -368,6 +423,10 @@ namespace SS
                 return r;
             }
 
+            /// <summary>
+            /// Removes a <see cref="Cell"/>, normally because of invalid regex
+            /// </summary>
+            /// <param name="title">The invalid name</param>
             public static void RemoveLeafNode(string title)
             {
                 if (head == null)
