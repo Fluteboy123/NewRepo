@@ -14,10 +14,12 @@ namespace Formulas
     /// the four binary operator symbols +, -, *, and /.  (The unary operators + and -
     /// are not allowed.)
     /// </summary>
-    public class Formula
+    public struct Formula
     {
         //Variables
         public ArrayList Tokens { get; private set; }
+        public delegate string Normalizer(string s);
+        public delegate bool Validator(string s);
         /// <summary>
         /// Creates a Formula from a string that consists of a standard infix expression composed
         /// from non-negative floating-point numbers (using C#-like syntax for double/int literals), 
@@ -85,6 +87,65 @@ namespace Formulas
                     String follower = (string)Tokens[i + 1];
                     if (!follower.Equals(")") && !new Regex(@"^[\+\-*/]$").IsMatch(follower))
                         throw new FormulaFormatException("Incorrect formatting of text");
+                }
+            }
+        }
+
+        public Formula(String s, Normalizer N, Validator V)
+        {
+            double temp;
+            Tokens = new ArrayList();
+            byte leftPar = 0, rightPar = 0;
+            IEnumerator counter = GetTokens(s).GetEnumerator();
+
+            //Adds all tokens while checking for exceptions
+            while (counter.MoveNext())
+            {
+                Tokens.Add(counter.Current);
+
+                if (counter.Current.Equals("("))
+                    leftPar++;
+                if (counter.Current.Equals(")"))
+                    rightPar++;
+                if (rightPar > leftPar)//Rule #3
+                    throw new FormulaFormatException("The number of right parentheses is larger than the number of left parentheses");
+            }
+
+            if (Tokens.Count == 0)//Rule #2
+            {
+                throw new FormulaFormatException("No tokens found");
+            }
+
+            if (!Tokens[0].Equals("(") && !new Regex(@"[a-zA-Z][0-9a-zA-Z]*").IsMatch((string)Tokens[0]) && !Double.TryParse((string)Tokens[0], out temp))//Rule #5
+                throw new FormulaFormatException("First character is improperly formatted");
+
+            if (leftPar != rightPar)//Rule #4
+                throw new FormulaFormatException("The number of left and right parentheses is uneven");
+
+            if (!Tokens[Tokens.Count - 1].Equals(")") && !new Regex(@"[a-zA-Z][0-9a-zA-Z]*").IsMatch((string)Tokens[Tokens.Count - 1]) && !Double.TryParse((string)Tokens[Tokens.Count - 1], out temp))//Rule #6
+                throw new FormulaFormatException("Last character is improperly formatted");
+
+            for (int i = 0; i < Tokens.Count - 1; i++)
+            {
+                if (Tokens[i].Equals("(") || new Regex(@"^[\+\-*/]$").IsMatch((string)Tokens[i]))//Rule #7
+                {
+                    String follower = (string)Tokens[i + 1];
+                    if (!follower.Equals("(") && !Double.TryParse(follower, out temp) && !new Regex(@"[a-zA-Z][0-9a-zA-Z]*").IsMatch(follower))
+                        throw new FormulaFormatException("Incorrect formatting of text after a parenthesis or operator");
+                }
+                else if (Double.TryParse((string)Tokens[i], out temp) || new Regex(@"[a-zA-Z][0-9a-zA-Z]*").IsMatch((string)Tokens[i]) || Tokens[i].Equals(")"))//Rule #8
+                {
+                    String follower = (string)Tokens[i + 1];
+                    if (!follower.Equals(")") && !new Regex(@"^[\+\-*/]$").IsMatch(follower))
+                        throw new FormulaFormatException("Incorrect formatting of text");
+                }
+                if(new Regex(@"[a-zA-Z][0-9a-zA-Z]*").IsMatch((string)Tokens[i]))
+                {
+                    if (!new Regex(@"[a-zA-Z][0-9a-zA-Z]*").IsMatch(N((string)Tokens[i])))
+                        throw new FormulaFormatException("Improperly normalized variable");
+                    else if(!V(N((string)(Tokens[i]))))
+                        throw new FormulaFormatException("Invalid variable");
+                    Tokens[i] = N((string)(Tokens[i]));
                 }
             }
         }
@@ -180,9 +241,10 @@ namespace Formulas
                     {
                         try
                         {
+                            
                             return lookup((string)(Tokens[i]));
                         }
-                        catch (Exception e)//Rule 1
+                        catch (Exception)//Rule 1
                         {
                             throw new FormulaEvaluationException("Inexistent variable used");
                         }
