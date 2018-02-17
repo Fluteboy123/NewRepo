@@ -12,5 +12,13 @@ namespace SpreadsheetTests
         {
             AbstractSpreadsheet ss = new Spreadsheet();
         }
+
+        [TestMethod]
+        public void TestCells()
+        {
+            Spreadsheet ss = new Spreadsheet();
+            Assert.AreEqual(ss.GetCellContents("A2"), null);
+        }
+        
     }
 }
