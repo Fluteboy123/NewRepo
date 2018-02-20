@@ -105,12 +105,15 @@ namespace SS
                 Cell.RemoveLeafNode(name);
                 throw new InvalidNameException();
             }
-            
+
+            ArrayList list = new ArrayList();
             IEnumerator deps = dg.GetDependees(name).GetEnumerator();
             while(deps.MoveNext())
             {
-                dg.RemoveDependency((String)deps.Current, name);
+                list.Add((String)deps.Current);
             }
+            foreach (String x in list)
+                dg.RemoveDependency(x, name);
 
             HashSet<string> names = new HashSet<string>();
             c.SetContents(number);
@@ -135,16 +138,23 @@ namespace SS
         /// </summary>
         public override ISet<string> SetCellContents(string name, string text)
         {
+            if (text == null)
+                throw new ArgumentNullException();
             if (!Cell.CreateOrAddCell(name, out Cell c))
             {
                 Cell.RemoveLeafNode(name);
                 throw new InvalidNameException();
             }
+
+            ArrayList list = new ArrayList();
             IEnumerator deps = dg.GetDependees(name).GetEnumerator();
             while (deps.MoveNext())
             {
-                dg.RemoveDependency((String)deps.Current, name);
+                list.Add((String)deps.Current);
             }
+            foreach (String x in list)
+                dg.RemoveDependency(x, name);
+
             c.SetContents(text);
             HashSet<String> names = new HashSet<string>();
             names.Add(name);
@@ -178,11 +188,15 @@ namespace SS
                 Cell.RemoveLeafNode(name);
                 throw new InvalidNameException();
             }
+
+            ArrayList list = new ArrayList();
             IEnumerator deps = dg.GetDependees(name).GetEnumerator();
             while (deps.MoveNext())
             {
-                dg.RemoveDependency((String)deps.Current, name);
+                list.Add((String)deps.Current);
             }
+            foreach (String x in list)
+                dg.RemoveDependency(x, name);
 
             HashSet<string> names = new HashSet<string>();
             c.SetContents(formula);
@@ -215,7 +229,7 @@ namespace SS
         protected override IEnumerable<string> GetDirectDependents(string name)
         {
             if (name == null)
-                throw new ArgumentNullException();
+                throw new InvalidNameException();
             if (!Cell.CreateOrAddCell(name, out Cell c))
             {
                 Cell.RemoveLeafNode(name);
@@ -260,7 +274,7 @@ namespace SS
             /// <param name="contents">Contents of the <see cref="Cell"/></param>
             public Cell(string name, object contents)
             {
-                Name = name;
+                Name = name ?? throw new InvalidNameException();
                 Contents = contents;
             }
 
@@ -270,7 +284,7 @@ namespace SS
             public object GetContents()
             {
                 if (t == null)
-                    return null;
+                    return "";
                 if (t.Equals(typeof(double))|| t.Equals(typeof(String)))
                     return Contents;
                 else if(t.Equals(typeof(Formula)))
@@ -305,21 +319,7 @@ namespace SS
             public void SetContents(String text)
             {
                 Contents = text;
-                Formula f = new Formula(text);
-                String varPattern = @"[a-zA-Z][0-9a-zA-Z]*";
                 ArrayList varNames = new ArrayList();
-                foreach (String x in f.Tokens)
-                {
-                    if (new Regex(varPattern).IsMatch(x))
-                    {
-                        if (!CreateOrAddCell(x, out Cell c))
-                        {
-                            RemoveLeafNode(x);
-                            throw new InvalidNameException();
-                        }
-                        dg.AddDependency(x, Name);
-                    }
-                }
                 t = typeof(String);
             }
 
@@ -364,7 +364,7 @@ namespace SS
                 if(head == null)
                 {
                     foundCell = (head = new Cell(name, null));
-                    return new Regex(@"^([A-Za-z][1-9][0-9]*)$").IsMatch(name);
+                    return name == null|| new Regex(@"^([A-Za-z][1-9][0-9]*)$").IsMatch(name);
                 }
                 Cell c = head;
                 while (c != null)
@@ -412,7 +412,7 @@ namespace SS
             public ArrayList GetNonEmptyCells()
             {
                 ArrayList r = new ArrayList();
-                if (GetContents() != null)
+                if (!GetContents().Equals(""))
                     r.Add(this);
                 if(Left!=null)
                     foreach (Cell x in Left.GetNonEmptyCells())
