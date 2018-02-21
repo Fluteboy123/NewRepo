@@ -93,7 +93,12 @@ namespace SS
         /// </summary>
         public override object GetCellValue(string name)
         {
-            throw new NotImplementedException();
+            if (!Cell.CreateOrAddCell(name, out Cell c))
+            {
+                Cell.RemoveLeafNode(name);
+                throw new InvalidNameException();
+            }
+            return c.GetValue();
         }
 
         /// <summary>
@@ -284,7 +289,28 @@ namespace SS
         /// </summary>
         public override ISet<string> SetContentsOfCell(string name, string content)
         {
-            throw new NotImplementedException();
+            if (content == null)
+                throw new ArgumentNullException();
+
+            if(!Cell.CreateOrAddCell(name, out Cell c))
+            {
+                Cell.RemoveLeafNode(name);
+                throw new InvalidNameException();
+            }
+
+            if(Double.TryParse(content, out Double dutch))
+            {
+                return SetCellContents(name, dutch);
+            }
+            else if(content.Substring(0,1).Equals("="))
+            {
+                Formula f = new Formula(content.Substring(1), s=>s.ToUpper(), s=>new Regex(@"[a-zA-Z][0-9a-zA-Z]*").IsMatch(s));
+                return SetCellContents(name, f);
+            }
+            else
+            {
+                return SetCellContents(name,content);
+            }
         }
 
         /// <summary>
@@ -375,6 +401,39 @@ namespace SS
                     catch(Exception e)
                     {
                         return e;
+                    }
+                }
+                throw new FormatException("Invalid type");
+            }
+
+            public object GetValue()
+            {
+                if (t == null)
+                    return "";
+                if (t.Equals(typeof(double)))
+                    return Contents;
+                else if (t.Equals(typeof(Formula)))
+                {
+                    try
+                    {
+                        double value = ((Formula)Contents).Evaluate(s => (double)CreateOrAddCell(s).GetContents());
+                        return value;
+                    }
+                    catch (Exception e)
+                    {
+                        return e;
+                    }
+                }
+                else if (t.Equals(typeof(String)))
+                {
+                    try
+                    {
+                        Formula f = new Formula((String)Contents);
+                        return f.Evaluate(s => (double)CreateOrAddCell(s).GetContents());
+                    }
+                    catch(Exception)
+                    {
+                        return (String)Contents;
                     }
                 }
                 throw new FormatException("Invalid type");
